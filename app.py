@@ -362,14 +362,21 @@ with st.sidebar:
             st.caption("Waiting for mission start...")
     
     st.markdown("---")
+    st.markdown("### ⚙️ API Management")
+    with st.expander("🔑 Use Your Own Keys", expanded=False):
+        st.caption("Provide your own keys for this session. System keys will be used if left blank.")
+        u_groq = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
+        u_tavily = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
+        if u_groq: os.environ["GROQ_API_KEY"] = u_groq
+        if u_tavily: os.environ["TAVILY_API_KEY"] = u_tavily
+
+    st.markdown("---")
     st.markdown("### 🗄️ Flux Library")
-    st.info("Your persisted Founder's Dossiers")
-    
-    archived_items = db.get_all_dossiers()
-    if not archived_items:
-        st.caption("No archived dossiers yet.")
+    items = db.get_all_dossiers()
+    if not items:
+        st.info("No saved intelligence dossiers yet.")
     else:
-        for item in archived_items:
+        for item in items:
             # Create a label with date and topic
             date_str = item['created_at'][:10]
             label = f"{date_str}: {item['problem_name']}"
