@@ -206,7 +206,15 @@ def reasoner_node(state: FluxIdeasState):
     
     try:
         chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
+        try:
+            analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
+        except Exception as ge:
+            print(f"Groq API Error in Reasoner: {ge}")
+            # Return a graceful failure state
+            return {
+                "reasoning_log": json.dumps({"quality_check": "FAIL", "full_verdict": f"Groq Error: {ge}"}),
+                "need_more_research": False
+            }
         
         need_more = False
         if analysis.get("quality_check") == "FAIL":

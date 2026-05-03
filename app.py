@@ -417,8 +417,26 @@ if st.session_state.app_stage == "input":
             st.rerun()
 
 # Stage: PROCESSING 1
-if st.session_state.app_stage == "processing1":
-    with st.status("⚡ FluxIdeas Intelligence Pipeline Active...", expanded=True) as status:
+        # Pre-flight Check
+        tavily_key = os.environ.get("TAVILY_API_KEY")
+        groq_key = os.environ.get("GROQ_API_KEY")
+        
+        if not tavily_key or "tvly-" not in tavily_key:
+            status.update(label="❌ Configuration Error", state="error")
+            st.error("**Missing Tavily API Key!** Please add `TAVILY_API_KEY` to your environment secrets.")
+            if st.button("Back to Input"):
+                st.session_state.app_stage = "input"
+                st.rerun()
+            st.stop()
+            
+        if not groq_key or "gsk_" not in groq_key:
+            status.update(label="❌ Configuration Error", state="error")
+            st.error("**Missing Groq API Key!** Please add `GROQ_API_KEY` to your environment secrets.")
+            if st.button("Back to Input"):
+                st.session_state.app_stage = "input"
+                st.rerun()
+            st.stop()
+
         initial_state = {"topic": st.session_state.topic, "founder_profile": st.session_state.founder_profile}
         try:
             process_stream(
@@ -439,7 +457,12 @@ if st.session_state.app_stage == "processing1":
                 st.session_state.app_stage = "done"
                 st.rerun()
         except Exception as e:
-            status.update(label=f"❌ Error: {str(e)}", state="error")
+            status.update(label=f"❌ Critical Pipeline Failure", state="error")
+            st.error(f"**The AI Intelligence Engine encountered an error:** {str(e)}")
+            st.info("Check your API keys, network connection, or try a more specific topic.")
+            if st.button("Reset Flux Session"):
+                st.session_state.app_stage = "input"
+                st.rerun()
 
 # Stage: SELECTION
 if st.session_state.app_stage == "selection":
