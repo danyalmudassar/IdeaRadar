@@ -1,0 +1,9 @@
+venv/
+.env
+.git/
+.github/
+__pycache__/
+*.pyc
+radar_library.db
+tests/
+.DS_Store

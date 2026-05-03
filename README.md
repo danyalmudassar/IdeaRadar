@@ -11,19 +11,26 @@ IdeaRadar utilizes a sequential chain of 3 specialized Agents built with **LangG
 3. **Agent C (The Strategist):** Powered by `Ollama`, it takes the winning problem and authors a full "Founder's Dossier," detailing the Market Opportunity, MVP Features, Tech Stack, and a 4-week Roadmap.
 4. **UI (The Dashboard):** A premium **Streamlit** frontend that streams the agent progress in real-time and provides a beautiful interface to view and download the blueprint.
 
-## 🚀 Streamlit Cloud Deployment
+## 🚀 Deployment: Railway.app (Recommended)
 
-1. **Push to GitHub**: Push your code to a public or private repository.
-2. **Deploy**: Link your repo to Streamlit Cloud.
-3. **CRITICAL: Set Secrets**: 
-   Go to **Settings > Secrets** in the Streamlit Dashboard and paste the following:
+IdeaRadar is Docker-ready for **Railway**. This is the most stable way to host the multi-agent pipeline.
 
-   ```toml
-   TAVILY_API_KEY = "your_tavily_key"
-   OLLAMA_BASE_URL = "your_cloud_url"
-   OLLAMA_API_KEY = "your_cloud_key"
-   APP_PASSWORD = "your_password"
-   ```
+1. **Connect GitHub**: Connect your repository to [Railway.app](https://railway.app).
+2. **Auto-Detect**: Railway will automatically find the `Dockerfile` and build it.
+3. **Variables**: Go to the **Variables** tab in Railway and add:
+   - `TAVILY_API_KEY`: Your key from tavily.com
+   - `OLLAMA_BASE_URL`: Your cloud endpoint
+   - `OLLAMA_API_KEY`: Your cloud key
+   - `APP_PASSWORD`: Your custom access key (e.g., `ridarai2024`)
+
+## 🚀 Deployment: Streamlit Cloud
+If you prefer Streamlit Cloud, go to **Settings > Secrets** and paste:
+```toml
+TAVILY_API_KEY = "..."
+OLLAMA_BASE_URL = "..."
+OLLAMA_API_KEY = "..."
+APP_PASSWORD = "..."
+```
 
 ## 🛠️ Tech Stack
 - **Agents**: LangGraph + LangChain
