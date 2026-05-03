@@ -6,10 +6,10 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
     build-essential \
     libxml2-dev \
     libxslt1-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Ollama
@@ -22,22 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Expose Streamlit and Ollama ports
+# Expose Streamlit default port
 EXPOSE 8501
-EXPOSE 11434
 
-# Set Environment Variables
-ENV OLLAMA_BASE_URL=http://localhost:11434
-ENV PYTHONUNBUFFERED=1
-
-# Create a startup script
-RUN echo '#!/bin/bash\n\
-ollama serve & \n\
-sleep 5\n\
-echo "📥 Pulling model: nemotron-3-nano..." \n\
-ollama pull nemotron-3-nano \n\
-echo "🚀 Starting Streamlit..." \n\
-streamlit run app.py --server.port ${PORT:-8501} --server.address 0.0.0.0' > start.sh && chmod +x start.sh
-
-# Run the startup script
-CMD ["./start.sh"]
+# Run Ollama in background, pull the cloud bridge, then start Streamlit
+CMD ["sh", "-c", "ollama serve & sleep 5 && ollama pull nemotron-3-nano:30b-cloud && streamlit run app.py --server.port ${PORT:-8501} --server.address 0.0.0.0"]
