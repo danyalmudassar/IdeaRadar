@@ -84,27 +84,20 @@ st.markdown("""
         opacity: 0.6;
     }
 
-    /* Ultra-Glass Cinematic Card */
-    div[data-testid='stVerticalBlock'] > div:has(div.flux-card) { 
-        background: rgba(15, 23, 42, 0.3); 
-        backdrop-filter: blur(40px) saturate(150%);
-        border: 1px solid rgba(255, 255, 255, 0.05); 
-        border-radius: 32px; 
-        padding: 70px; 
-        box-shadow: 0 80px 150px -30px rgba(0, 0, 0, 0.8); 
-        margin-bottom: 60px; 
-        transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-        animation: appear-card 1.2s ease-out;
+    /* Cinematic Clean Cards (Targeting Streamlit Forms and Containers) */
+    div[data-testid="stForm"], .flux-card-wrap {
+        background: rgba(15, 23, 42, 0.4) !important;
+        backdrop-filter: blur(40px) saturate(150%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 32px !important;
+        padding: 60px !important;
+        box-shadow: 0 80px 150px -30px rgba(0, 0, 0, 0.8) !important;
+        transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        margin-top: 20px !important;
     }
-    @keyframes appear-card {
-        from { opacity: 0; transform: translateY(40px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    div[data-testid='stVerticalBlock'] > div:has(div.flux-card):hover {
-        background: rgba(15, 23, 42, 0.4);
-        border-color: rgba(0, 255, 135, 0.2);
-        box-shadow: 0 100px 180px -40px rgba(0, 0, 0, 0.9);
-        transform: translateY(-8px) scale(1.01);
+    div[data-testid="stForm"]:hover {
+        border-color: rgba(0, 255, 135, 0.2) !important;
+        transform: translateY(-5px);
     }
 
     /* Premium Cinematic Button */
@@ -392,7 +385,6 @@ with st.sidebar:
 # ── Main UI Logic ───────────────────────────────────────────────────
 # Stage: INPUT
 if st.session_state.app_stage == "input":
-    st.markdown("<div class='flux-card'>", unsafe_allow_html=True)
     with st.form("search_form", border=False):
         topic = st.text_input("Enter a Market or Topic (e.g. 'CI/CD tools', 'No-code for Shopify')", placeholder="What niche are we auditing today?")
         
