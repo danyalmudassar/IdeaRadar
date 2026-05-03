@@ -23,142 +23,183 @@ st.set_page_config(page_title='FluxIdeas | AI Intelligence', page_icon='⚡', la
 # Premium CSS for Flux Aesthetic
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
 
-    /* Clean & Smooth Base */
+    /* Cinematic Clean Base */
     html { scroll-behavior: smooth; }
     .stApp { 
         background: #020617; 
-        background-image: radial-gradient(at 50% 0%, rgba(30, 41, 59, 0.4) 0%, transparent 50%);
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(0, 255, 135, 0.05) 0%, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(96, 239, 255, 0.05) 0%, transparent 50%),
+            radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.5) 0%, transparent 50%);
         font-family: 'Outfit', sans-serif; 
         color: #f8fafc;
+        animation: aurora-bg 20s ease infinite;
+    }
+    @keyframes aurora-bg {
+        0% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+        100% { background-position: 0% 0%; }
     }
 
-    /* Minimalist High-End Title */
+    /* Cinematic Floating Title */
     .flux-title { 
-        font-size: 5rem !important; 
-        font-weight: 800; 
-        letter-spacing: -3px; 
-        background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%); 
+        font-size: 6.5rem !important; 
+        font-weight: 900; 
+        letter-spacing: -6px; 
+        background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%); 
         -webkit-background-clip: text; 
         -webkit-text-fill-color: transparent; 
         text-align: center; 
         margin-bottom: 0px !important; 
-        opacity: 0.9;
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+        animation: float-title 6s ease-in-out infinite;
+    }
+    @keyframes float-title {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
     }
 
-    /* Subtle Bolt */
+    /* Neon Pulse Bolt */
     .flux-bolt {
         text-align: center;
-        margin-top: -20px;
-        margin-bottom: 20px;
-        opacity: 0.8;
-        transition: transform 0.5s ease;
+        margin-top: -50px;
+        margin-bottom: 30px;
+        animation: pulse-glow 4s ease-in-out infinite;
     }
-    .flux-bolt:hover { transform: scale(1.1); }
+    @keyframes pulse-glow {
+        0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 255, 135, 0.3)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 30px rgba(0, 255, 135, 0.8)); transform: scale(1.05); }
+    }
 
     .flux-tagline { 
         text-align: center; 
-        color: #475569; 
-        font-size: 1rem; 
+        color: #64748b; 
+        font-size: 1.1rem; 
         font-weight: 400; 
-        letter-spacing: 8px; 
+        letter-spacing: 12px; 
         text-transform: uppercase; 
-        margin-bottom: 80px !important; 
+        margin-bottom: 100px !important; 
+        opacity: 0.6;
     }
 
-    /* Neat Minimalist Card */
+    /* Ultra-Glass Cinematic Card */
     div[data-testid='stVerticalBlock'] > div:has(div.flux-card) { 
-        background: #0f172a; 
-        border: 1px solid rgba(255, 255, 255, 0.03); 
-        border-radius: 24px; 
-        padding: 60px; 
-        box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.5); 
-        margin-bottom: 50px; 
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background: rgba(15, 23, 42, 0.3); 
+        backdrop-filter: blur(40px) saturate(150%);
+        border: 1px solid rgba(255, 255, 255, 0.05); 
+        border-radius: 32px; 
+        padding: 70px; 
+        box-shadow: 0 80px 150px -30px rgba(0, 0, 0, 0.8); 
+        margin-bottom: 60px; 
+        transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        animation: appear-card 1.2s ease-out;
+    }
+    @keyframes appear-card {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     div[data-testid='stVerticalBlock'] > div:has(div.flux-card):hover {
-        border-color: rgba(0, 255, 135, 0.1);
-        transform: translateY(-4px);
+        background: rgba(15, 23, 42, 0.4);
+        border-color: rgba(0, 255, 135, 0.2);
+        box-shadow: 0 100px 180px -40px rgba(0, 0, 0, 0.9);
+        transform: translateY(-8px) scale(1.01);
     }
 
-    /* Smooth Button */
+    /* Premium Cinematic Button */
     div.stButton > button { 
-        background: #00ff87 !important; 
+        background: linear-gradient(135deg, #00ff87 0%, #60efff 100%) !important; 
         color: #020617 !important; 
-        font-weight: 700 !important; 
-        font-size: 1.1rem !important; 
-        padding: 0.8rem 3.5rem !important; 
-        border-radius: 12px !important; 
+        font-weight: 800 !important; 
+        font-size: 1.2rem !important; 
+        padding: 1.2rem 4.5rem !important; 
+        border-radius: 100px !important; 
         border: none !important; 
-        box-shadow: 0 4px 14px 0 rgba(0, 255, 135, 0.3) !important; 
-        transition: all 0.3s ease !important;
-        text-transform: none;
-        letter-spacing: 0.5px;
+        box-shadow: 0 20px 40px rgba(0, 255, 135, 0.3) !important; 
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        text-transform: uppercase;
+        letter-spacing: 2px;
     }
     div.stButton > button:hover { 
-        background: #60efff !important;
-        transform: scale(1.02); 
-        box-shadow: 0 6px 20px rgba(96, 239, 255, 0.4) !important; 
+        transform: translateY(-10px) scale(1.05); 
+        box-shadow: 0 40px 80px rgba(0, 255, 135, 0.6) !important; 
     }
 
-    /* Neat Terminal */
+    /* Terminal Console Aesthetic */
     .flux-terminal { 
         background: #010409 !important; 
-        border: 1px solid #1e293b !important; 
-        border-radius: 16px !important; 
-        padding: 25px !important; 
+        border: 1px solid rgba(255, 255, 255, 0.05) !important; 
+        border-radius: 20px !important; 
+        padding: 30px !important; 
         font-family: 'JetBrains Mono', monospace !important; 
-        color: #94a3b8 !important; 
-        font-size: 0.9rem !important;
-        line-height: 1.6; 
+        color: #60efff !important; 
+        font-size: 0.95rem !important;
+        line-height: 1.8; 
+        box-shadow: inset 0 4px 20px rgba(0,0,0,0.8);
     }
 
-    /* Clean Inputs */
+    /* Luminous Inputs */
     .stTextInput > div > div > input { 
-        background: transparent !important; 
-        border-radius: 12px !important; 
-        border: 1px solid #1e293b !important; 
+        background: rgba(15, 23, 42, 0.5) !important; 
+        border-radius: 16px !important; 
+        border: 1px solid rgba(255, 255, 255, 0.05) !important; 
         color: white !important; 
-        padding: 15px 20px !important; 
-        font-size: 1.1rem !important;
-        transition: border-color 0.3s ease;
+        padding: 20px 30px !important; 
+        font-size: 1.3rem !important;
+        transition: all 0.4s ease;
+        backdrop-filter: blur(10px);
     }
     .stTextInput > div > div > input:focus {
         border-color: #00ff87 !important;
+        box-shadow: 0 0 30px rgba(0, 255, 135, 0.2) !important;
+        background: rgba(15, 23, 42, 0.8) !important;
     }
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    /* Cinematic Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
+        height: 60px;
         background-color: transparent;
-        border-radius: 8px;
-        padding: 0 25px;
+        border-radius: 12px;
+        padding: 0 40px;
         color: #475569;
-        font-weight: 400;
-        border: none;
+        font-weight: 600;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #1e293b !important;
+        background-color: rgba(30, 41, 59, 0.5) !important;
         color: #00ff87 !important;
+        border-color: rgba(0, 255, 135, 0.3) !important;
+        backdrop-filter: blur(10px);
     }
     
-    /* Clean Quote */
+    /* Elegant Quote */
     .flux-quote {
-        background: #0f172a;
-        border-left: 3px solid #1e293b;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 15px;
+        background: rgba(15, 23, 42, 0.5);
+        border-left: 5px solid #00ff87;
+        padding: 30px;
+        border-radius: 20px;
+        margin-bottom: 25px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Main Application ──────────────────────────────────────────────────
-st.markdown("<h1 class='flux-title'>FLUXIDEAS</h1>", unsafe_allow_html=True)
-st.markdown("<div class='flux-bolt'><img src='https://img.icons8.com/nolan/128/lightning-bolt.png' width='80'></div>", unsafe_allow_html=True)
-st.markdown("<p class='flux-tagline'>Advanced Multi-Agent Intelligence Synthesis</p>", unsafe_allow_html=True)
+st.markdown("""
+<div style='text-align:center; margin-bottom:80px;'>
+    <h1 class='flux-title'>FLUXIDEAS</h1>
+    <div class='flux-bolt'>
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="#00ff87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="rgba(0,255,135,0.2)"/>
+        </svg>
+    </div>
+    <p class='flux-tagline'>Advanced Multi-Agent Intelligence Synthesis</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Initialize Session State
 if 'app_stage' not in st.session_state:
