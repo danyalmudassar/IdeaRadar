@@ -418,6 +418,8 @@ if st.session_state.app_stage == "input":
             st.rerun()
 
 # Stage: PROCESSING 1
+if st.session_state.app_stage == "processing1":
+    with st.status("⚡ FluxIdeas Intelligence Pipeline Active...", expanded=True) as status:
         # Pre-flight Check
         tavily_key = os.environ.get("TAVILY_API_KEY")
         groq_key = os.environ.get("GROQ_API_KEY")
