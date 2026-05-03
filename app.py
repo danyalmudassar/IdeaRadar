@@ -200,6 +200,7 @@ if 'app_stage' not in st.session_state:
     st.session_state.thread_id = str(uuid.uuid4())
     st.session_state.current_state = None
     st.session_state.topic = ""
+    st.session_state.founder_profile = {"location": "Global", "skills": "", "budget": "$0 - $100", "time": "5-10 hrs"}
     st.session_state.selected_problem = None
     st.session_state.archived_dossier = None
     st.session_state.live_logs = []
