@@ -4,6 +4,7 @@ from src.state import IdeaRadarState
 import time
 import os
 import json
+import re
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from langchain_community.chat_models import ChatOllama
@@ -15,6 +16,36 @@ load_dotenv()
 import requests
 from ddgs import DDGS
 import urllib.parse
+
+def robust_json_parse(text: str):
+    """Attempt to parse JSON even if surrounded by thinking blocks or markdown."""
+    if not text:
+        return None
+        
+    # 1. Remove <thinking> blocks if they exist
+    text = re.sub(r'<thinking>.*?</thinking>', '', text, flags=re.DOTALL)
+    
+    # 2. Try to find JSON in markdown blocks
+    match = re.search(r'```(?:json)?\s*(.*?)```', text, flags=re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except:
+            pass
+            
+    # 3. Try to find the first [ or { and the last ] or }
+    match = re.search(r'([\[\{].*[\]\}])', text, flags=re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except:
+            pass
+            
+    # 4. Final fallback to direct load
+    try:
+        return json.loads(text.strip())
+    except:
+        return None
 
 def scout_node(state: IdeaRadarState):
     topic = state.get("topic")
@@ -213,9 +244,13 @@ def reasoner_node(state: IdeaRadarState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
+        res = llm.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
+        content = res.content if hasattr(res, 'content') else str(res)
+        analysis = robust_json_parse(content)
         
+        if not analysis:
+            raise ValueError("Failed to parse reasoning JSON output.")
+            
         need_more = False
         if analysis.get("quality_check") == "FAIL":
             need_more = True
@@ -226,8 +261,7 @@ def reasoner_node(state: IdeaRadarState):
         }
     except Exception as e:
         print(f"Reasoner Error: {e}")
-        # If parsing fails, we assume it's just text or an error, don't loop
-        return {"reasoning_log": f"Reasoning analysis failed: {e}", "need_more_research": False}
+        return {"reasoning_log": json.dumps({"error": str(e), "verdict": "FAILED"}), "need_more_research": False}
 
 
 
@@ -284,9 +318,13 @@ def analyst_node(state: IdeaRadarState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        chain = prompt | llm | JsonOutputParser()
-        problems = chain.invoke({"raw_data": raw_text, "founder_context": founder_context})
+        res = llm.invoke({"raw_data": raw_text, "founder_context": founder_context})
+        content = res.content if hasattr(res, 'content') else str(res)
+        problems = robust_json_parse(content)
         
+        if not problems:
+            raise ValueError(f"Analyst failed to parse JSON. Raw content: {content[:100]}...")
+
         # Normalize output to handle dict-wrapped lists and key variations
         if isinstance(problems, dict):
             # Sometimes models return {"problems": [...]}
@@ -431,8 +469,7 @@ def strategist_node(state: IdeaRadarState):
     )
 
     try:
-        chain = prompt | llm | JsonOutputParser()
-        dossier = chain.invoke({
+        res = llm.invoke({
             "problem_name":   problem_name,
             "description":    description,
             "why_now":        why_now,
@@ -442,6 +479,12 @@ def strategist_node(state: IdeaRadarState):
             "market_score":   market_score,
             "source_refs":    source_refs_str
         })
+        content = res.content if hasattr(res, 'content') else str(res)
+        dossier = robust_json_parse(content)
+        
+        if not dossier:
+            raise ValueError("Strategist failed to parse JSON.")
+            
         return {"blueprint": dossier}
     except Exception as e:
         print(f"Strategist Error: {e}")
@@ -510,13 +553,18 @@ def economist_node(state: IdeaRadarState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({
+        res = llm.invoke({
             "problem_name": problem_name,
             "target_customer": target_cust,
             "search_data": "\n\n".join(stats_data),
             "location": location
         })
+        content = res.content if hasattr(res, 'content') else str(res)
+        analysis = robust_json_parse(content)
+        
+        if not analysis:
+            raise ValueError("Economist failed to parse JSON.")
+            
         return {"market_size_analysis": analysis}
     except Exception as e:
         print(f"Economist Analysis Error: {e}")
@@ -579,11 +627,16 @@ def critic_node(state: IdeaRadarState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({
+        res = llm.invoke({
             "problem_name": problem_name,
             "blueprint": json.dumps(blueprint)
         })
+        content = res.content if hasattr(res, 'content') else str(res)
+        analysis = robust_json_parse(content)
+        
+        if not analysis:
+            raise ValueError("Critic failed to parse JSON.")
+            
         return {"risk_assessment": analysis}
     except Exception as e:
         print(f"Critic Analysis Error: {e}")
