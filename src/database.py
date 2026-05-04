@@ -21,18 +21,19 @@ class FluxIdeasDB:
                     market_score INTEGER,
                     mockup_url TEXT,
                     risk_json TEXT,
+                    full_state_json TEXT,
                     created_at TIMESTAMP
                 )
             """)
             conn.commit()
 
-    def save_dossier(self, topic, problem_name, blueprint, market_score, mockup_url=None, risk_assessment=None):
+    def save_dossier(self, topic, problem_name, blueprint, market_score, mockup_url=None, risk_assessment=None, full_state=None):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO dossiers (topic, problem_name, blueprint_json, market_score, mockup_url, risk_json, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (topic, problem_name, json.dumps(blueprint), market_score, mockup_url, json.dumps(risk_assessment), datetime.now().isoformat()))
+                INSERT INTO dossiers (topic, problem_name, blueprint_json, market_score, mockup_url, risk_json, full_state_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (topic, problem_name, json.dumps(blueprint), market_score, mockup_url, json.dumps(risk_assessment), json.dumps(full_state), datetime.now().isoformat()))
             conn.commit()
 
     def get_all_dossiers(self):

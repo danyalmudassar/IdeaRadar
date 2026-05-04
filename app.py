@@ -14,11 +14,47 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.graph import app as graph_app
 from src.state import FluxIdeasState
 from src.database import FluxIdeasDB
+from datetime import datetime
 
 # Initialize Database
 db = FluxIdeasDB()
 
 st.set_page_config(page_title='FluxIdeas | AI Intelligence', page_icon='⚡', layout='wide', initial_sidebar_state='collapsed')
+
+# --- Sidebar Archive (The Dynamic Library) ---
+with st.sidebar:
+    st.markdown("<h2 style='color:#60efff; font-size:1.2rem; font-weight:900;'>🏛️ VENTURE LIBRARY</h2>", unsafe_allow_html=True)
+    st.caption("Your persistent archive of AI-generated business blueprints.")
+    
+    past_scans = db.get_all_dossiers()
+    if past_scans:
+        for ps in past_scans:
+            try:
+                # Handle potential timestamp issues
+                dt = datetime.fromisoformat(ps['created_at'])
+                date_label = dt.strftime("%b %d | %H:%M")
+            except:
+                date_label = "Archive"
+                
+            btn_label = f"🚀 {ps['problem_name']}\n{date_label}"
+            if st.button(btn_label, key=f"ps_{ps['id']}", use_container_width=True):
+                # Reload State
+                try:
+                    f_state = json.loads(ps['full_state_json'])
+                    st.session_state.current_state = f_state
+                    st.session_state.selected_problem = f_state.get("selected_problem")
+                    st.session_state.topic = ps['topic']
+                    st.session_state.app_stage = "done"
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Failed to load: {e}")
+        
+        st.markdown("---")
+        if st.button("🆕 Start New Research", use_container_width=True):
+            st.session_state.app_stage = "input"
+            st.rerun()
+    else:
+        st.info("No dossiers saved yet. Complete a scan to build your library!")
 
 # Premium CSS for Flux Aesthetic
 st.markdown("""
@@ -579,6 +615,23 @@ if st.session_state.app_stage == "processing2":
             # Resume stream by passing None
             process_stream(graph_app.stream(None, config=config), status)
             status.update(label="✅ Scan Complete!", state="complete", expanded=False)
+            
+            # --- PERSISTENCE: Save to Library ---
+            final_state = st.session_state.current_state
+            if final_state:
+                # Add selected problem to full state for easier reloading
+                final_state["selected_problem"] = st.session_state.selected_problem
+                
+                db.save_dossier(
+                    topic=st.session_state.topic,
+                    problem_name=st.session_state.selected_problem.get("problem_name", "Unknown"),
+                    blueprint=final_state.get("blueprint"),
+                    market_score=st.session_state.selected_problem.get("market_score", 0),
+                    mockup_url=final_state.get("mockup_url"),
+                    risk_assessment=final_state.get("risk_assessment"),
+                    full_state=final_state
+                )
+            
             st.session_state.app_stage = "done"
             st.rerun()
         except Exception as e:
@@ -603,6 +656,13 @@ if st.session_state.app_stage == "done":
         <span style='background:#334155;color:#a0aec0;padding:4px 14px;border-radius:20px;font-size:0.9rem;'>💬 {p_sent}</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # Venture Health Gauges
+    gh1, gh2, gh3 = st.columns(3)
+    gh1.metric("👤 Founder Fit", f"{sel_prob.get('founder_fit_score', 0)*10}%")
+    gh2.metric("🔥 Market Heat", f"{sel_prob.get('urgency_score', 0)*10}%")
+    gh3.metric("🏰 Defensibility", f"{sel_prob.get('moat_score', 0)*10}%")
+    st.markdown("---")
 
     # ── 5 Tabs ───────────────────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 The Insight", "💡 The MVP", "🛠️ The Build", "📉 Risk Audit", "🔗 Sources"])
@@ -1051,12 +1111,27 @@ if st.session_state.app_stage == "done":
             
             st.session_state.app_stage = "selection"
             st.rerun()
-    with col_new:
-        if st.button("🔄 New Scan", use_container_width=True):
-            st.session_state.clear()
-            st.rerun()
-
     st.markdown("---")
+    
+    # ── Strategy Pivot (Dynamic Refinement) ──────────────────────────────────
+    with st.expander("🔥 PIVOT STRATEGY: Refine this Blueprint", expanded=False):
+        st.markdown("#### 🛠️ Direct the AI to update this idea")
+        st.caption("Example: 'Target enterprise companies instead of individuals', 'Add a focus on privacy', 'Suggest a different tech stack'.")
+        pivot_input = st.text_area("Your Refinement Instructions:", placeholder="What should be different about this business model?")
+        
+        if st.button("🚀 Regenerate with Feedback", use_container_width=True):
+            with st.status("🎯 Pivoting Strategy...", expanded=True) as status:
+                # Add pivot instructions to state
+                st.session_state.current_state["topic"] = f"{st.session_state.topic} (REFINE: {pivot_input})"
+                
+                # We need to clear previous outputs to force regeneration
+                st.session_state.current_state.pop("blueprint", None)
+                st.session_state.current_state.pop("market_size_analysis", None)
+                st.session_state.current_state.pop("risk_assessment", None)
+                
+                # Rerun processing2 stage
+                st.session_state.app_stage = "processing2"
+                st.rerun()
     
     # ── Interactive Strategy Consultant Chat ─────────────────────────────────
     st.markdown("### 💬 Chat with your Strategy Consultant")
