@@ -230,17 +230,76 @@ def scout_node(state: FluxIdeasState):
             })
         return results
 
-    try:
-        sources = scrape_hn(f"{search_topic} problem pain")
-        if not sources:
-            sources = scrape_hn(search_topic)   # broader fallback
-        if not sources:
-            sources = [{"text": f"No deep discussions found for '{search_topic}'.",
-                        "author": "N/A", "url": "", "story_title": "", "date": ""}]
+    def scrape_reddit(query, hits=8):
+        """Use Tavily to search Reddit specifically for pain points."""
+        tavily_key = os.environ.get("TAVILY_API_KEY")
+        if not tavily_key: return []
+        try:
+            url = "https://api.tavily.com/search"
+            payload = {
+                "api_key": tavily_key,
+                "query": f"site:reddit.com {query} problem pain point",
+                "search_depth": "advanced",
+                "max_results": hits
+            }
+            resp = requests.post(url, json=payload, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for res in data.get("results", []):
+                results.append({
+                    "text": res.get("content", ""),
+                    "author": "Reddit Community",
+                    "url": res.get("url", ""),
+                    "story_title": res.get("title", "Reddit Discussion"),
+                    "date": "Recent"
+                })
+            return results
+        except: return []
 
-        sources = sources[:10]
-        raw_data = [s["text"] for s in sources]
-        return {"raw_data": raw_data, "raw_sources": sources}
+    def scrape_producthunt(query, hits=5):
+        """Use Tavily to search ProductHunt for competitors and gaps."""
+        tavily_key = os.environ.get("TAVILY_API_KEY")
+        if not tavily_key: return []
+        try:
+            url = "https://api.tavily.com/search"
+            payload = {
+                "api_key": tavily_key,
+                "query": f"site:producthunt.com {query} reviews alternatives",
+                "search_depth": "basic",
+                "max_results": hits
+            }
+            resp = requests.post(url, json=payload, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for res in data.get("results", []):
+                results.append({
+                    "text": res.get("content", ""),
+                    "author": "ProductHunt User",
+                    "url": res.get("url", ""),
+                    "story_title": res.get("title", "Product Feedback"),
+                    "date": "Recent"
+                })
+            return results
+        except: return []
+
+    try:
+        # Multi-Signal Scouting
+        hn_sources = scrape_hn(f"{search_topic} problem pain")
+        reddit_sources = scrape_reddit(search_topic)
+        ph_sources = scrape_producthunt(search_topic)
+        
+        all_sources = hn_sources + reddit_sources + ph_sources
+        
+        if not all_sources:
+            all_sources = [{"text": f"No deep discussions found for '{search_topic}'.",
+                           "author": "N/A", "url": "", "story_title": "", "date": ""}]
+
+        # Sort by length of text as a proxy for detail
+        all_sources = sorted(all_sources, key=lambda x: len(x['text']), reverse=True)[:15]
+        raw_data = [s["text"] for s in all_sources]
+        return {"raw_data": raw_data, "raw_sources": all_sources}
 
     except Exception as e:
         pass
@@ -710,17 +769,47 @@ def designer_node(state: FluxIdeasState):
     problem_name = state.get('selected_problem', {}).get('problem_name', 'Software')
     mvp = blueprint.get('mvp_blueprint', {})
     
-    # print(f"Designer Node: Generating visual mockup for '{problem_name}'...")
-    
-    # Construct a descriptive prompt for the AI image generator
     features = [v.get('name', '') for k, v in mvp.items() if isinstance(v, dict)]
     feature_str = ", ".join(features)
     
+    # 1. Generate Visual Mockup URL
     base_prompt = f"Professional clean UI UX design for {problem_name}, a software product featuring {feature_str}. High resolution, modern aesthetic, dark mode, dashboard layout, 4k, tech startup style."
     encoded_prompt = urllib.parse.quote(base_prompt)
     mockup_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=768&nologo=true"
     
-    return {"mockup_url": mockup_url}
+    # 2. Generate Design System via LLM
+    design_prompt = PromptTemplate(
+        template="""You are a Lead Product Designer. Generate a mini design system for: {problem_name}.
+        Features: {features}
+        
+        Return ONLY a JSON object with:
+        - "color_palette": ["Primary Hex", "Secondary Hex", "Accent Hex", "Background Hex"],
+        - "typography": {{"font_family": "...", "base_size": "...", "headings": "..."}},
+        - "component_style": "1 sentence describing the visual vibe (e.g. Neo-brutalism, Glassmorphism, Minimalist)",
+        - "icon_style": "e.g. Line icons, Solid, Duo-tone"
+        
+        Return ONLY valid JSON.
+        """,
+        input_variables=["problem_name", "features"]
+    )
+    
+    try:
+        raw_design, model_id = invoke_llm(design_prompt, {"problem_name": problem_name, "features": feature_str}, tier="fast")
+        design_system = extract_json(raw_design)
+        
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Designer"] = model_id
+    except:
+        design_system = {
+            "color_palette": ["#00ff87", "#60efff", "#1e293b", "#0f172a"], 
+            "typography": {"font_family": "Inter", "base_size": "16px", "headings": "Outfit"}, 
+            "component_style": "Modern Dark Mode", 
+            "icon_style": "Line icons"
+        }
+        usage = state.get("model_usage", {})
+
+    return {"mockup_url": mockup_url, "design_system": design_system, "model_usage": usage}
 
 def critic_node(state: FluxIdeasState):
     selected_problem = state.get('selected_problem', {})

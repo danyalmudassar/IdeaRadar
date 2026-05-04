@@ -614,7 +614,12 @@ if st.session_state.app_stage == "done":
     for src in (st.session_state.current_state or {}).get("raw_sources", []):
         url = src.get("url", "")
         if url and url not in [r.get("url") for r in all_refs]:
-            all_refs.append({"author": src.get("author", ""), "url": url, "source": src.get("story_title", "")})
+            all_refs.append({
+                "author": src.get("author", ""), 
+                "url": url, 
+                "story_title": src.get("story_title", ""),
+                "source": src.get("story_title", "General Insight")
+            })
 
     # ── Tab 1: The Insight ───────────────────────────────────────────────────
     with tab1:
@@ -742,6 +747,24 @@ if st.session_state.app_stage == "done":
         if mock_url:
             st.markdown("### 🎨 Visual MVP Mockup")
             st.image(mock_url, caption=f"AI-Generated Mockup for {p_name}", use_container_width=True)
+            
+            # Render Design System
+            ds = (st.session_state.current_state or {}).get("design_system", {})
+            if ds:
+                with st.expander("🧬 View Brand Design System", expanded=True):
+                    dc1, dc2 = st.columns([1, 1.2])
+                    with dc1:
+                        st.markdown("**Color Palette**")
+                        palette = ds.get("color_palette", [])
+                        pal_html = "".join([f"<div style='display:inline-block;background:{c};width:40px;height:40px;border-radius:8px;margin-right:8px;border:1px solid #334155' title='{c}'></div>" for c in palette])
+                        st.markdown(pal_html, unsafe_allow_html=True)
+                        st.caption(" ".join(palette))
+                    with dc2:
+                        typo = ds.get("typography", {})
+                        st.markdown(f"**Vibe:** {ds.get('component_style', 'N/A')}")
+                        st.markdown(f"**Icons:** {ds.get('icon_style', 'N/A')}")
+                        st.caption(f"Headings: {typo.get('headings', 'N/A')} | Body: {typo.get('font_family', 'N/A')}")
+            
             st.markdown("---")
 
         mvp = dossier.get("mvp_blueprint", {})
@@ -823,13 +846,22 @@ if st.session_state.app_stage == "done":
         
         if all_refs:
             for i, ref in enumerate(all_refs, 1):
+                url = ref.get('url', '')
+                platform = "🌐 Web Signal"
+                color = "#60efff"
+                if "reddit.com" in url: platform, color = "🧡 Reddit", "#ff4500"
+                elif "news.ycombinator.com" in url: platform, color = "🧡 HackerNews", "#ff6600"
+                elif "producthunt.com" in url: platform, color = "😸 ProductHunt", "#da552f"
+                
+                title = ref.get('story_title') or ref.get('source') or "Direct Reference"
+                
                 st.markdown(f"""
-                <div style='background:#1e293b;border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid #60efff'>
+                <div style='background:#1e293b;border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid {color}'>
                     <div style='font-weight:600;color:#f8fafc'>
-                        {i}. <a href="{ref['url']}" target="_blank" style="color:#60efff;text-decoration:none">{ref.get('source', 'Source')}</a>
+                        {i}. <a href="{url}" target="_blank" style="color:{color};text-decoration:none">{title}</a>
                     </div>
                     <div style='color:#94a3b8;font-size:0.85rem;margin-top:4px'>
-                        📝 Source: {ref.get('author', 'Community Insight')} | <a href="{ref['url']}" target="_blank" style="color:#94a3b8;text-decoration:underline">Direct Link</a>
+                        {platform} | 📝 Source: {ref.get('author', 'Community Insight')} | <a href="{url}" target="_blank" style="color:#94a3b8;text-decoration:underline">Direct Link</a>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
