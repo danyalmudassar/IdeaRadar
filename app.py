@@ -581,8 +581,27 @@ if st.session_state.app_stage == "done":
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 3 Tabs ───────────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 The Insight", "💡 The MVP", "🛠️ The Build", "📉 Risk Audit"])
+    # ── 5 Tabs ───────────────────────────────────────────────────────────────
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 The Insight", "💡 The MVP", "🛠️ The Build", "📉 Risk Audit", "🔗 Sources"])
+
+    # ── Collect References Logic ─────────────────────────────────────────────
+    # Collect all cited URLs from voice_of_customer, selected problem source_refs, and raw_sources
+    all_refs = []
+    for item in dossier.get("voice_of_customer", []):
+        url = item.get("url", "")
+        if url and url not in [r.get("url") for r in all_refs]:
+            all_refs.append({"author": item.get("author", ""), "url": url, "source": item.get("source", "")})
+    
+    sel_prob = dossier.get("selected_problem", {})
+    for ref in sel_prob.get("source_refs", []):
+        url = ref.get("url", "")
+        if url and url not in [r.get("url") for r in all_refs]:
+            all_refs.append({"author": ref.get("author", ""), "url": url, "source": ref.get("title", "")})
+            
+    for src in (st.session_state.current_state or {}).get("raw_sources", []):
+        url = src.get("url", "")
+        if url and url not in [r.get("url") for r in all_refs]:
+            all_refs.append({"author": src.get("author", ""), "url": url, "source": src.get("story_title", "")})
 
     # ── Tab 1: The Insight ───────────────────────────────────────────────────
     with tab1:
@@ -753,29 +772,25 @@ if st.session_state.app_stage == "done":
         else:
             st.caption("No risk audit data available.")
 
-    # ── References & Sources ──────────────────────────────────────────────────
-    st.markdown("### 📚 References & Sources")
-    # Collect all cited URLs from voice_of_customer and selected problem source_refs
-    all_refs = []
-    for item in dossier.get("voice_of_customer", []):
-        url = item.get("url", "")
-        if url and url not in [r.get("url") for r in all_refs]:
-            all_refs.append({"author": item.get("author", ""), "url": url, "source": item.get("source", "")})
-    for ref in sel_prob.get("source_refs", []):
-        url = ref.get("url", "")
-        if url and url not in [r.get("url") for r in all_refs]:
-            all_refs.append({"author": ref.get("author", ""), "url": url, "source": ref.get("title", "")})
-    # Also gather raw_sources from session state
-    for src in (st.session_state.current_state or {}).get("raw_sources", []):
-        url = src.get("url", "")
-        if url and url not in [r.get("url") for r in all_refs]:
-            all_refs.append({"author": src.get("author", ""), "url": url, "source": src.get("story_title", "")})
-
-    if all_refs:
-        for i, ref in enumerate(all_refs, 1):
-            st.markdown(f"{i}. [{ref.get('source', 'Source')}]({ref['url']}) — *{ref.get('author', 'Unknown')}*")
-    else:
-        st.caption("No external references were captured for this scan.")
+    # ── Tab 5: Sources ───────────────────────────────────────────────────────
+    with tab5:
+        st.markdown("### 📚 Research Sources & References")
+        st.caption("These are the primary signals, expert reports, and community threads used to validate this business gap.")
+        
+        if all_refs:
+            for i, ref in enumerate(all_refs, 1):
+                st.markdown(f"""
+                <div style='background:#1e293b;border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid #60efff'>
+                    <div style='font-weight:600;color:#f8fafc'>
+                        {i}. <a href="{ref['url']}" target="_blank" style="color:#60efff;text-decoration:none">{ref.get('source', 'Source')}</a>
+                    </div>
+                    <div style='color:#94a3b8;font-size:0.85rem;margin-top:4px'>
+                        📝 Source: {ref.get('author', 'Community Insight')} | <a href="{ref['url']}" target="_blank" style="color:#94a3b8;text-decoration:underline">Direct Link</a>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No external references were captured for this specific scan.")
 
     st.markdown("---")
 
