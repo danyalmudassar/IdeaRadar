@@ -381,9 +381,7 @@ def researcher_node(state: FluxIdeasState):
             elif "youtube.com" in url: source_label = "YouTube"
             
             if len(text) > 50:
-                research_notes.append(
-    f"""Source: {title} ({source_label})\nURL: {url}\nFinding: {text}"""
-)
+                research_notes.append(f"Source: {title} ({source_label})\nURL: {url}\nFinding: {text}")
                 new_raw_data.append(text)
                 new_raw_sources.append({
                     "text": text,
@@ -392,7 +390,29 @@ def researcher_node(state: FluxIdeasState):
                     "story_title": title,
                     "date": "Recent"
                 })
-                        
+
+        # 4. Deep Extraction (Tavily /extract)
+        # Pick top 2 high-signal URLs from existing sources to extract full content
+        scout_sources = state.get("raw_sources", [])
+        if scout_sources:
+            extraction_candidates = [s.get("url") for s in scout_sources if s.get("url") and any(x in s.get("url") for x in ["reddit.com", "news.ycombinator.com", "medium.com", "blog"])]
+            extraction_urls = list(set(extraction_candidates))[:2] 
+            
+            for url in extraction_urls:
+                try:
+                    # Using direct REST for /extract as SDK support varies
+                    e_resp = requests.post(
+                        "https://api.tavily.com/extract", 
+                        json={"api_key": tavily_key, "urls": [url]},
+                        timeout=10
+                    )
+                    e_data = e_resp.json()
+                    for res in e_data.get("results", []):
+                        content = res.get("raw_content", "")
+                        if content and len(content) > 100:
+                            new_raw_data.append(f"--- DEEP CONTENT EXTRACTION FROM {url} ---\n{content[:5000]}")
+                except: pass
+
         # Append to existing state instead of replacing
         current_data = state.get("raw_data", []) + new_raw_data
         current_sources = state.get("raw_sources", []) + new_raw_sources
@@ -403,7 +423,7 @@ def researcher_node(state: FluxIdeasState):
             "raw_sources": current_sources,
             "research_notes": research_notes,
             "research_rounds": current_rounds,
-            "need_more_research": False # Reset flag for now
+            "need_more_research": False
         }
     except Exception as e:
         pass
