@@ -101,7 +101,7 @@ st.markdown("""
     }
 
     /* Premium Cinematic Button */
-    div.stButton > button { 
+    div.stButton > button, div.stDownloadButton > button { 
         background: linear-gradient(135deg, #00ff87 0%, #60efff 100%) !important; 
         color: #020617 !important; 
         font-weight: 800 !important; 
@@ -111,10 +111,13 @@ st.markdown("""
         border: none !important; 
         box-shadow: 0 10px 30px rgba(0, 255, 135, 0.3) !important; 
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; 
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
-    div.stButton > button:hover { 
-        transform: translateY(-10px) scale(1.05); 
-        box-shadow: 0 40px 80px rgba(0, 255, 135, 0.6) !important; 
+    div.stButton > button:hover, div.stDownloadButton > button:hover { 
+        transform: translateY(-5px) scale(1.02); 
+        box-shadow: 0 20px 40px rgba(0, 255, 135, 0.6) !important; 
     }
 
     /* Terminal Console Aesthetic */
