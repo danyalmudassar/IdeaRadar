@@ -34,41 +34,47 @@ def extract_json(text):
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
-    Invokes LLM. Prioritizes Gemini if GOOGLE_API_KEY or GEMINI_API_KEY is available, 
-    otherwise falls back to Groq (Llama-3.3-70b).
+    Ultimate Fallback Engine: Rotates through Gemini and Groq models
+    to bypass rate limits on both platforms.
     """
     gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    
-    if gemini_key and "AIza" in gemini_key:
-        # Set GOOGLE_API_KEY if not present so ChatGoogleGenerativeAI finds it
-        if not os.environ.get("GOOGLE_API_KEY"):
-            os.environ["GOOGLE_API_KEY"] = gemini_key
-        # Use Gemini
-        try:
-            model_name = "gemini-1.5-pro" if tier == "versatile" else "gemini-1.5-flash"
-            llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
-            chain = prompt_template | llm | StrOutputParser()
-            return chain.invoke(inputs)
-        except Exception as e:
-            # If Gemini fails, we will attempt Groq below
-            pass
+    groq_key = os.environ.get("GROQ_API_KEY")
 
-    # Fallback to Groq
-    model_id = VERSATILE_MODELS[0] 
-    max_retries = 2
-    
-    for attempt in range(max_retries + 1):
+    # Define the "Resilience Chain"
+    # (Provider, Model ID)
+    resilience_chain = []
+    if gemini_key:
+        resilience_chain.extend([
+            ("gemini", "gemini-2.5-pro"),
+            ("gemini", "gemini-2.5-flash")
+        ])
+    if groq_key:
+        resilience_chain.extend([
+            ("groq", "llama-3.3-70b-versatile"),
+            ("groq", "llama-3.1-8b-instant")
+        ])
+
+    for provider, model_id in resilience_chain:
         try:
-            llm = ChatGroq(model=model_id, temperature=temperature)
+            if provider == "gemini":
+                # Ensure the SDK has the key
+                if not os.environ.get("GOOGLE_API_KEY"):
+                    os.environ["GOOGLE_API_KEY"] = gemini_key
+                llm = ChatGoogleGenerativeAI(model=model_id, temperature=temperature)
+            else:
+                llm = ChatGroq(model=model_id, temperature=temperature)
+            
             chain = prompt_template | llm | StrOutputParser()
             return chain.invoke(inputs)
         except Exception as e:
             err_msg = str(e).lower()
-            if ("rate_limit" in err_msg or "429" in err_msg or "overloaded" in err_msg) and attempt < max_retries:
-                time.sleep(5) # Wait before retry
+            # If rate limited, overloaded, or quota exhausted, try next model
+            if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted"]):
+                time.sleep(2) # Small buffer
                 continue
             raise e
-    raise Exception(f"Failed to invoke LLM (Both Gemini and Groq were unavailable or rate-limited).")
+            
+    raise Exception("All intelligence engines (Gemini & Groq) are currently at their rate limits. Please try again in 60 seconds.")
 
 def scout_node(state: FluxIdeasState):
     topic = state.get("topic")
