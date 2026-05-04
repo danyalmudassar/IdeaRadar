@@ -183,9 +183,9 @@ def researcher_node(state: FluxIdeasState):
             elif "youtube.com" in url: source_label = "YouTube"
             
             if len(text) > 50:
-                research_notes.append(f"Source: {title} ({source_label})
-URL: {url}
-Finding: {text}")
+                research_notes.append(
+    f"""Source: {title} ({source_label})\nURL: {url}\nFinding: {text}"""
+)
                 new_raw_data.append(text)
                 new_raw_sources.append({
                     "text": text,
