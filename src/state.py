@@ -15,4 +15,5 @@ class FluxIdeasState(TypedDict):
     identified_problems: List[Dict[str, Any]]
     selected_problem: Dict[str, Any]
     blueprint: Optional[Any]           # structured dict from Strategist
+    model_usage: Dict[str, str]        # Track which model was used for each agent
     next_agent: str

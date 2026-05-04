@@ -206,10 +206,12 @@ if 'app_stage' not in st.session_state:
     st.session_state.archived_dossier = None
     st.session_state.live_logs = []
     st.session_state.chat_history = []
+    st.session_state.model_usage = {}
 
-def add_log(agent, message, container=None):
+def add_log(agent, message, container=None, model=None):
     timestamp = time.strftime("%H:%M:%S")
-    log_html = f"<div class='log-entry'><span style='color:#475569'>[{timestamp}]</span> <span class='log-agent'>{agent.upper()}</span>: {message}</div>"
+    model_tag = f" <span style='color:#00ff87; font-size:0.75rem; border:1px solid #00ff8744; padding:1px 6px; border-radius:4px; margin-left:8px;'>{model}</span>" if model else ""
+    log_html = f"<div class='log-entry'><span style='color:#475569'>[{timestamp}]</span> <span class='log-agent'>{agent.upper()}</span>{model_tag}: {message}</div>"
     st.session_state.live_logs.append(log_html)
     # Keep only last 20 logs
     if len(st.session_state.live_logs) > 20:
@@ -302,12 +304,18 @@ def process_stream(stream_generator, status_container, log_container=None):
             else:
                 st.session_state.current_state.update(value)
             
+            # Sync model usage to session state
+            current_model_usage = st.session_state.current_state.get("model_usage", {})
+            st.session_state.model_usage.update(current_model_usage)
+            
+            current_model = current_model_usage.get(key.capitalize()) or current_model_usage.get(key)
+            
             if key == "orchestrator":
                 next_a = value.get('next_agent')
                 status_container.update(label=f"🤖 Orchestrator: Routing to {next_a}...", state="running")
                 progress_bar.progress(progress, text=f"Routing to {next_a.upper()}...")
                 add_log("orchestrator", f"Decision: Handing over mission to {next_a.upper()}.", log_container)
-                if next_a != "END":
+                if next_a != "END" and next_a != "ask_human":
                     add_log(next_a, "Initializing agent systems... thinking...", log_container)
             elif key == "scout":
                 status_container.update(label="🕵️‍♂️ Scout Agent: Crawling HackerNews...", state="running")
@@ -326,28 +334,28 @@ def process_stream(stream_generator, status_container, log_container=None):
             elif key == "reasoner":
                 status_container.update(label="🧠 Reasoner Agent: Performing Deep Reasoning...", state="running")
                 st.write("✓ **Reasoner** finished Chain-of-Thought pattern synthesis.")
-                add_log("reasoner", "Pattern synthesis finished. Identifying market intensity.", log_container)
+                add_log("reasoner", "Pattern synthesis finished. Identifying market intensity.", log_container, model=current_model)
             elif key == "analyst":
                 status_container.update(label="📊 Analyst Agent: Ranking Market Gaps...", state="running")
                 problems = value.get("identified_problems", [])
                 st.write(f"✓ **Analyst** identified {len(problems)} top-tier opportunities.")
-                add_log("analyst", f"Analysis finished. Selected {len(problems)} high-potential gaps.", log_container)
+                add_log("analyst", f"Analysis finished. Selected {len(problems)} high-potential gaps.", log_container, model=current_model)
             elif key == "strategist":
                 status_container.update(label="📈 Strategist Agent: Drafting Business Plan...", state="running")
                 st.write("✓ **Strategist** finalized the 7-point Founder's Dossier.")
-                add_log("strategist", "Dossier drafting complete. Generated 7-point business plan.", log_container)
+                add_log("strategist", "Dossier drafting complete. Generated 7-point business plan.", log_container, model=current_model)
             elif key == "economist":
                 status_container.update(label="💰 Economist Agent: Calculating TAM/SAM/SOM...", state="running")
                 st.write("✓ **Economist** finalized market size projections.")
-                add_log("economist", "TAM/SAM/SOM calculations finalized.", log_container)
+                add_log("economist", "TAM/SAM/SOM calculations finalized.", log_container, model=current_model)
             elif key == "designer":
                 status_container.update(label="🎨 Designer Agent: Creating Visual Mockup...", state="running")
                 st.write("✓ **Designer** generated the UI concept URL.")
-                add_log("designer", "Visual identity and UI mockup constructed.", log_container)
+                add_log("designer", "Visual identity and UI mockup constructed.", log_container, model=current_model)
             elif key == "critic":
                 status_container.update(label="🕵️‍♂️ Critic Agent: Final Risk Audit...", state="running")
                 st.write("✓ **Critic** finished stress-testing the model.")
-                add_log("critic", "Red-team audit finished. Identified kill-switch criteria.", log_container)
+                add_log("critic", "Red-team audit finished. Identified kill-switch criteria.", log_container, model=current_model)
                 progress_bar.empty() # Clear at end
 
 # ── Sidebar: Flux Library ──────────────────────────────────────────
@@ -426,6 +434,7 @@ if st.session_state.app_stage == "input":
                 "budget": budget,
                 "time": time_avail
             }
+            st.session_state.model_usage = {} # Reset
             st.session_state.app_stage = "processing1"
             st.rerun()
 
@@ -452,7 +461,11 @@ if st.session_state.app_stage == "processing1":
                 st.rerun()
             st.stop()
 
-        initial_state = {"topic": st.session_state.topic, "founder_profile": st.session_state.founder_profile}
+        initial_state = {
+            "topic": st.session_state.topic, 
+            "founder_profile": st.session_state.founder_profile,
+            "model_usage": {}
+        }
         try:
             process_stream(
                 graph_app.stream(initial_state, config=config), 

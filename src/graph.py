@@ -115,7 +115,7 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
                 if match:
                     raw_output = match.group(1)
             
-            return raw_output
+            return raw_output, model_id
         except Exception as e:
             err_msg = str(e).lower()
             # Fallback on rate limits, timeouts, 404s, or connection errors
@@ -330,7 +330,7 @@ def reasoner_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2)
+        raw_output, model_id = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2)
         analysis = extract_json(raw_output)
         if analysis is None:
             raise ValueError("Failed to parse JSON from Reasoner output")
@@ -339,9 +339,14 @@ def reasoner_node(state: FluxIdeasState):
         if analysis.get("quality_check") == "FAIL":
             need_more = True
             
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Reasoner"] = model_id
+            
         return {
             "reasoning_log": json.dumps(analysis),
-            "need_more_research": need_more
+            "need_more_research": need_more,
+            "model_usage": usage
         }
     except Exception as e:
         pass
@@ -402,11 +407,15 @@ def analyst_node(state: FluxIdeasState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0)
+        raw_output, model_id = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0)
         problems = extract_json(raw_output)
         if problems is None:
             raise ValueError("Failed to parse JSON from Analyst output")
         
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Analyst"] = model_id
+
         # Normalize output to handle dict-wrapped lists and key variations
         if isinstance(problems, dict):
             # Sometimes models return {"problems": [...]}
@@ -452,7 +461,7 @@ def analyst_node(state: FluxIdeasState):
                 
             problems = sorted(normalized_problems, key=lambda x: float(x.get("market_score", 0)), reverse=True)
             
-        return {"identified_problems": problems}
+        return {"identified_problems": problems, "model_usage": usage}
 
     except Exception as e:
         pass
@@ -542,7 +551,7 @@ def strategist_node(state: FluxIdeasState):
     )
 
     try:
-        raw_output = invoke_llm(prompt, {
+        raw_output, model_id = invoke_llm(prompt, {
             "problem_name": problem_name,
             "description": description,
             "target_customer": target_cust,
@@ -551,7 +560,12 @@ def strategist_node(state: FluxIdeasState):
         }, tier="versatile", temperature=0.3)
         blueprint = extract_json(raw_output)
         if blueprint is None: raise ValueError("Failed to parse JSON")
-        return {"blueprint": blueprint}
+        
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Strategist"] = model_id
+        
+        return {"blueprint": blueprint, "model_usage": usage}
     except Exception as e:
         pass
         # print(f"Strategist Error: {e}")
@@ -618,7 +632,7 @@ def economist_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {
+        raw_output, model_id = invoke_llm(prompt, {
             "problem_name": problem_name,
             "target_customer": target_cust,
             "search_data": "\n\n".join(stats_data),
@@ -626,7 +640,12 @@ def economist_node(state: FluxIdeasState):
         }, tier="versatile", temperature=0)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
-        return {"market_size_analysis": analysis}
+        
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Economist"] = model_id
+        
+        return {"market_size_analysis": analysis, "model_usage": usage}
     except Exception as e:
         pass
         # print(f"Economist Analysis Error: {e}")
@@ -680,10 +699,15 @@ def critic_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {"problem_name": problem_name, "blueprint": json.dumps(blueprint)}, tier="versatile", temperature=0)
+        raw_output, model_id = invoke_llm(prompt, {"problem_name": problem_name, "blueprint": json.dumps(blueprint)}, tier="versatile", temperature=0)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
-        return {"risk_assessment": analysis}
+        
+        # Update model usage
+        usage = state.get("model_usage", {})
+        usage["Critic"] = model_id
+        
+        return {"risk_assessment": analysis, "model_usage": usage}
     except Exception as e:
         pass
         # print(f"Critic Analysis Error: {e}")
