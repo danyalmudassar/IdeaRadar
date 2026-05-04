@@ -52,7 +52,13 @@ def extract_json(text):
                 import re
                 json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
                 return json.loads(json_str)
-    except:
+            except Exception as parse_err:
+                with open("model_usage.log", "a") as f:
+                    f.write(f"[ERROR] JSON Parse Failed: {str(parse_err)} | Snippet: {text[:200]}...{text[-200:]}\n")
+                pass
+    except Exception as outer_err:
+        with open("model_usage.log", "a") as f:
+            f.write(f"[ERROR] Extraction Failed: {str(outer_err)}\n")
         pass
     
     return None
@@ -422,7 +428,7 @@ def analyst_node(state: FluxIdeasState):
     
     prompt = PromptTemplate(
         template="""You are an expert Venture Capital Analyst and Product Strategist.
-        Identify the TOP 10 most viable business problems/gaps based on the provided research.
+        Identify the TOP 6 most viable business problems/gaps based on the provided research.
         
         CRITICAL: Factor in the FOUNDER PROFILE. If an idea matches their skills, give it a higher 'founder_fit_score'.
         FOUNDER PROFILE: {founder_context}
@@ -443,7 +449,7 @@ def analyst_node(state: FluxIdeasState):
         - "sentiment": 1 word describing user emotion
         - "source_refs": List of 1-3 objects {{"author": "...", "url": "...", "title": "..."}} from the data.
         
-        Return ONLY a JSON array of 10 objects, sorted by 'market_score' (highest first).
+        Return ONLY a JSON array of 6 objects, sorted by 'market_score' (highest first).
         
         CRITICAL: Do not include ANY text before or after the JSON array. Start with [ and end with ].
         """,
