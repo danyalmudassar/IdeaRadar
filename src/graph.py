@@ -85,7 +85,8 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
             return chain.invoke(inputs)
         except Exception as e:
             err_msg = str(e).lower()
-            if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted"]):
+            # If rate limited, overloaded, quota exhausted, or invalid (often region/quota), try next model
+            if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted", "400", "invalid_argument"]):
                 time.sleep(2)
                 continue
             raise e
