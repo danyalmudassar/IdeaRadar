@@ -254,18 +254,24 @@ if 'app_stage' not in st.session_state:
     st.session_state.chat_history = []
     st.session_state.model_usage = {}
 
+# Initialize Mission Control Container globally so agents can find it
+if 'log_container' not in st.session_state:
+    st.session_state.log_container = None
+
 def add_log(agent, message, container=None, model=None):
     timestamp = time.strftime("%H:%M:%S")
     model_tag = f" <span style='color:#00ff87; font-size:0.75rem; border:1px solid #00ff8744; padding:1px 6px; border-radius:4px; margin-left:8px;'>{model}</span>" if model else ""
     log_html = f"<div class='log-entry'><span style='color:#475569'>[{timestamp}]</span> <span class='log-agent'>{agent.upper()}</span>{model_tag}: {message}</div>"
     st.session_state.live_logs.append(log_html)
-    # Keep only last 20 logs
-    if len(st.session_state.live_logs) > 20:
+    
+    if len(st.session_state.live_logs) > 30:
         st.session_state.live_logs.pop(0)
     
-    # If a container handle is provided, update it live
-    if container:
-        with container:
+    # Update live container if it exists
+    target = container or st.session_state.get('log_container')
+    if target:
+        with target:
+            # Re-render all logs (Streamlit way to keep it live)
             for l in st.session_state.live_logs[::-1]:
                 st.markdown(l, unsafe_allow_html=True)
 
@@ -382,15 +388,14 @@ def process_stream(stream_generator, status_container, log_container=None):
                 phase_name, phase_icon = phases[key]
                 status_container.update(label=f"{phase_icon} {phase_name}: {key.capitalize()} in progress...", state="running")
                 
-                # Show detailed updates inside the expander
-                with status_container:
-                    st.markdown(f"**{phase_icon} {key.capitalize()} Update:**")
-                    if detailed_log:
-                        st.caption(detailed_log)
+                # Show detailed updates inside the expander directly
+                status_container.markdown(f"**{phase_icon} {key.capitalize()} Update:**")
+                if detailed_log:
+                    status_container.caption(detailed_log)
                 
                 # Global Log
                 if detailed_log:
-                    add_log(key, detailed_log, log_container, model=current_model)
+                    add_log(key, detailed_log, st.session_state.log_container, model=current_model)
                 
                 if key == "critic":
                     progress_bar.empty()
@@ -399,10 +404,11 @@ def process_stream(stream_generator, status_container, log_container=None):
 with st.sidebar:
     st.markdown("### <span class='live-pulse'></span> 🖥️ Mission Control", unsafe_allow_html=True)
     st.caption("Live Multi-Agent Log")
-    log_container = st.container(height=300)
-    with log_container:
+    # Store in session state for cross-stage access
+    st.session_state.log_container = st.container(height=350)
+    with st.session_state.log_container:
         if st.session_state.live_logs:
-            for l in st.session_state.live_logs[::-1]: # Show newest first
+            for l in st.session_state.live_logs[::-1]:
                 st.markdown(l, unsafe_allow_html=True)
         else:
             st.caption("Waiting for mission start...")
@@ -475,7 +481,7 @@ if st.session_state.app_stage == "processing1":
             process_stream(
                 graph_app.stream(initial_state, config=config), 
                 status,
-                log_container 
+                st.session_state.log_container 
             )
             
             # Check state to see if we hit the interrupt
@@ -572,7 +578,7 @@ if st.session_state.app_stage == "processing2":
         
         try:
             # Resume stream by passing None
-            process_stream(graph_app.stream(None, config=config), status)
+            process_stream(graph_app.stream(None, config=config), status, st.session_state.log_container)
             status.update(label="✅ Scan Complete!", state="complete", expanded=False)
             
             # --- PERSISTENCE: Save to Library ---
@@ -1079,7 +1085,7 @@ if st.session_state.app_stage == "done":
         pivot_input = st.text_area("Your Refinement Instructions:", placeholder="What should be different about this business model?")
         
         if st.button("🚀 Regenerate with Feedback", use_container_width=True):
-            with st.status("🎯 Pivoting Strategy...", expanded=True) as status:
+            with st.status("⚙️ Processing Venture Intelligence...", expanded=True) as status:
                 # Add pivot instructions to state
                 st.session_state.current_state["topic"] = f"{st.session_state.topic} (REFINE: {pivot_input})"
                 
