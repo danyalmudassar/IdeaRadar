@@ -652,6 +652,37 @@ if st.session_state.app_stage == "done":
             ec3.metric("SOM", mkt.get("som", "N/A"))
             st.write(f"**Growth Rate:** {mkt.get('growth_rate', 'N/A')}")
             st.success(f"**Economist Verdict:** {mkt.get('economist_verdict', '')}")
+            
+            # Interactive Revenue Simulator
+            st.markdown("#### 🧮 Interactive Revenue Simulator")
+            with st.expander("🛠️ Adjust Growth Assumptions", expanded=False):
+                sc1, sc2 = st.columns(2)
+                target_pct = sc1.slider("Target Market Share (%)", 0.01, 5.0, 0.5, step=0.01)
+                price_point = sc2.number_input("Monthly Subscription ($)", value=29)
+                
+                def parse_market_val(val_str):
+                    try:
+                        import re
+                        clean = re.sub(r'[^\d.]', '', val_str)
+                        val = float(clean) if clean else 1.0
+                        if "B" in val_str.upper(): return val * 1e9
+                        if "M" in val_str.upper(): return val * 1e6
+                        if "K" in val_str.upper(): return val * 1e3
+                        return val
+                    except: return 1000000
+                
+                som_num = parse_market_val(mkt.get("som", "1M"))
+                # Simplified model: Rev = SOM * Share%
+                projected_annual = som_num * (target_pct / 100)
+                projected_mrr = projected_annual / 12
+                
+                st.metric("Target MRR", f"${projected_mrr:,.0f}")
+                st.caption(f"Projected ARR: ${projected_annual:,.0f} (at {target_pct}% share)")
+                
+                # 12-Month Scaling Graph
+                scaling = [projected_mrr * (i/12)**2 for i in range(1, 13)] # Quadratic growth curve
+                st.area_chart(scaling)
+
             st.markdown("---")
 
         # Reasoning Log
@@ -912,35 +943,40 @@ if st.session_state.app_stage == "done":
         with st.chat_message("assistant"):
             with st.spinner("Consulting the strategist..."):
                 try:
-                    from langchain_community.chat_models import ChatOllama
-                    from langchain_core.messages import HumanMessage, SystemMessage
-                    
-                    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-                    chat_llm = ChatOllama(model="nemotron-3-nano:30b-cloud", base_url=ollama_url)
+                    from src.graph import invoke_llm
+                    from langchain_core.prompts import PromptTemplate
                     
                     # Context for the AI
-                    context = f"""
+                    context_template = """
                     You are an elite AI Startup Consultant. You just generated this Founder's Dossier:
                     PROBLEM: {p_name}
-                    BLUEPRINT: {json.dumps(dossier)}
-                    MARKET: {json.dumps((st.session_state.current_state or {}).get('market_size_analysis', {}))}
-                    RISKS: {json.dumps((st.session_state.current_state or {}).get('risk_assessment', {}))}
+                    BLUEPRINT: {dossier_json}
+                    MARKET: {market_json}
+                    RISKS: {risk_json}
+                    
+                    User Question: {user_query}
                     
                     Answer the user's questions about this specific idea. Be actionable, realistic, and insightful.
                     """
                     
-                    messages = [SystemMessage(content=context)]
-                    for m in st.session_state.chat_history[-5:]: # Keep last 5 for context
-                        if m["role"] == "user":
-                            messages.append(HumanMessage(content=m["content"]))
-                        else:
-                            # Not ideal but works for simple chat
-                            messages.append(HumanMessage(content=m["content"])) 
+                    prompt = PromptTemplate(
+                        template=context_template,
+                        input_variables=["p_name", "dossier_json", "market_json", "risk_json", "user_query"]
+                    )
                     
-                    response = chat_llm.invoke(messages)
-                    assistant_text = response.content
+                    # Package inputs
+                    inputs = {
+                        "p_name": p_name,
+                        "dossier_json": json.dumps(dossier),
+                        "market_json": json.dumps((st.session_state.current_state or {}).get('market_size_analysis', {})),
+                        "risk_json": json.dumps((st.session_state.current_state or {}).get('risk_assessment', {})),
+                        "user_query": prompt
+                    }
+                    
+                    assistant_text, model_id = invoke_llm(prompt, inputs, tier="versatile", temperature=0.7)
                     
                     st.markdown(assistant_text)
+                    st.caption(f"Generated by {model_id}")
                     st.session_state.chat_history.append({"role": "assistant", "content": assistant_text})
                 except Exception as e:
                     st.error(f"Consultant Error: {e}")
