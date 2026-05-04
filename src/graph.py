@@ -213,9 +213,7 @@ def researcher_node(state: FluxIdeasState):
 
 def reasoner_node(state: FluxIdeasState):
     print("Reasoner Node: Synthesizing data and identifying patterns...")
-    raw_text = "
-
-".join(state.get('raw_data', []))
+    raw_text = "\n".join(state.get('raw_data', []))
     topic = state.get("topic")
     
     
