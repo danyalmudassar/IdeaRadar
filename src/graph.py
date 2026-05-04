@@ -5,16 +5,34 @@ import time
 import os
 import json
 import requests
+import re
+import urllib.parse
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
-import re
+from ddgs import DDGS
+
+load_dotenv()
+
+# --- Model Pools for Load Balancing / Rate Limit Bypass ---
+VERSATILE_MODELS = [
+    "llama-3.3-70b-versatile",
+    "qwen/qwen3-32b",
+    "groq/compound",
+    "meta-llama/llama-3.1-70b-instruct"
+]
+
+FAST_MODELS = [
+    "llama-3.1-8b-instant",
+    "groq/compound-mini",
+    "meta-llama/llama-4-scout-17b-16e-instruct"
+]
+
 def extract_json(text):
     """Extract JSON from text block using regex."""
     try:
-        # Look for [ ... ] or { ... }
         match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
         if match:
             return json.loads(match.group(1))
@@ -22,13 +40,28 @@ def extract_json(text):
     except:
         return None
 
-
-load_dotenv()
-
-import requests
-import re
-from ddgs import DDGS
-import urllib.parse
+def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
+    """
+    Invokes Groq with automatic model switching if rate limited.
+    """
+    models = VERSATILE_MODELS if tier == "versatile" else FAST_MODELS
+    last_error = None
+    
+    for model_id in models:
+        try:
+            llm = ChatGroq(model=model_id, temperature=temperature)
+            chain = prompt_template | llm | StrOutputParser()
+            return chain.invoke(inputs)
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "rate_limit" in err_msg or "429" in err_msg or "overloaded" in err_msg or "too many requests" in err_msg:
+                # If rate limited, try the next model in the pool
+                continue
+            # If it's a different error (e.g. auth, syntax), raise it
+            raise e
+            
+    # If we exhausted all models, raise the last rate limit error
+    raise Exception(f"Rate limit exceeded on all models in the {tier} pool. Please wait a moment.")
 
 def scout_node(state: FluxIdeasState):
     topic = state.get("topic")
@@ -209,9 +242,6 @@ def reasoner_node(state: FluxIdeasState):
     raw_text = "\n".join(state.get('raw_data', []))
     topic = state.get("topic")
     
-    
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
-    
     prompt = PromptTemplate(
         template="""You are a Deep Reasoning Agent. Your task is to perform a Chain-of-Thought analysis on raw market data.
         
@@ -233,18 +263,11 @@ def reasoner_node(state: FluxIdeasState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        try:
-            analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
-        except Exception as ge:
-            pass
-            # print(f"Groq API Error in Reasoner: {ge}")
-            # Return a graceful failure state
-            return {
-                "reasoning_log": json.dumps({"quality_check": "FAIL", "full_verdict": f"Groq Error: {ge}"}),
-                "need_more_research": False
-            }
-        
+        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2)
+        analysis = extract_json(raw_output)
+        if analysis is None:
+            raise ValueError("Failed to parse JSON from Reasoner output")
+            
         need_more = False
         if analysis.get("quality_check") == "FAIL":
             need_more = True
@@ -279,8 +302,6 @@ def analyst_node(state: FluxIdeasState):
 )
     raw_text = "\n".join(enriched_parts) if enriched_parts else "\n".join(state.get('raw_data', []))
     
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
-    
     prompt = PromptTemplate(
         template="""You are an expert Venture Capital Analyst and Product Strategist.
         Identify the TOP 10 most viable business problems/gaps based on the provided research.
@@ -314,8 +335,7 @@ def analyst_node(state: FluxIdeasState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({"raw_data": raw_text[:12000], "founder_context": founder_context})
+        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0)
         problems = extract_json(raw_output)
         if problems is None:
             raise ValueError("Failed to parse JSON from Analyst output")
@@ -389,30 +409,19 @@ def strategist_node(state: FluxIdeasState):
     selected_problem = state.get('selected_problem', {})
     problem_name = selected_problem.get('problem_name', 'Unknown Problem')
     description  = selected_problem.get('description', '')
-    why_now      = selected_problem.get('why_now', '')
+    market_gap   = selected_problem.get('market_gap', '')
     target_cust  = selected_problem.get('target_customer', '')
-    evidence     = selected_problem.get('evidence_quote', '')
-    sentiment    = selected_problem.get('sentiment', 'unknown')
-    market_score = selected_problem.get('market_score', 0)
-    source_refs  = selected_problem.get('source_refs', [])
-    source_refs_str = json.dumps(source_refs) if source_refs else '[]'
-    # print(f"Strategist Node: Building full dossier for '{problem_name}'...")
-
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
+    raw_text     = "\n".join(state.get('raw_data', []))
 
     prompt = PromptTemplate(
         template="""You are an elite startup strategist and business analyst.
-        You have been given a validated market problem identified from real internet discussions.
-        Generate a comprehensive Founder's Dossier as a JSON object.
+        Generate a comprehensive Founder's Dossier as a JSON object for the problem: {problem_name}.
 
         Problem: {problem_name}
         Description: {description}
-        Why Now: {why_now}
+        Market Gap: {market_gap}
         Target Customer: {target_customer}
-        Evidence: {evidence}
-        User Sentiment: {sentiment}
-        Market Score: {market_score}/100
-        Source References (real URLs from research): {source_refs}
+        Research Context: {raw_context}
 
         Return ONLY a JSON object with these exact top-level keys:
 
@@ -462,16 +471,20 @@ def strategist_node(state: FluxIdeasState):
           }}
         }}
         """,
-        input_variables=["problem_name", "description", "why_now", "target_customer",
-                         "evidence", "sentiment", "market_score", "source_refs"]
+        input_variables=["problem_name", "description", "market_gap", "target_customer", "raw_context"]
     )
 
     try:
-        chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({"problem_name":   problem_name,"description":    description,"why_now":        why_now,"target_customer":target_cust,"evidence":       evidence,"sentiment":      sentiment,"market_score":   market_score,"source_refs":    source_refs_str})
-        dossier = extract_json(raw_output)
-        if dossier is None: raise ValueError("Failed to parse JSON")
-        return {"blueprint": dossier}
+        raw_output = invoke_llm(prompt, {
+            "problem_name": problem_name,
+            "description": description,
+            "target_customer": target_cust,
+            "market_gap": market_gap,
+            "raw_context": raw_text[:10000]
+        }, tier="versatile", temperature=0.3)
+        blueprint = extract_json(raw_output)
+        if blueprint is None: raise ValueError("Failed to parse JSON")
+        return {"blueprint": blueprint}
     except Exception as e:
         pass
         # print(f"Strategist Error: {e}")
@@ -538,13 +551,12 @@ def economist_node(state: FluxIdeasState):
     )
     
     try:
-        chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({
+        raw_output = invoke_llm(prompt, {
             "problem_name": problem_name,
             "target_customer": target_cust,
             "search_data": "\n\n".join(stats_data),
             "location": location
-        })
+        }, tier="versatile", temperature=0)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"market_size_analysis": analysis}
@@ -601,8 +613,7 @@ def critic_node(state: FluxIdeasState):
     )
     
     try:
-        chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({"problem_name": problem_name, "blueprint": json.dumps(blueprint)})
+        raw_output = invoke_llm(prompt, {"problem_name": problem_name, "blueprint": json.dumps(blueprint)}, tier="versatile", temperature=0)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"risk_assessment": analysis}
