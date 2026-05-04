@@ -25,6 +25,22 @@ class FluxIdeasDB:
                     created_at TIMESTAMP
                 )
             """)
+            
+            # Robust Migration: Check for missing columns in existing databases
+            cursor.execute("PRAGMA table_info(dossiers)")
+            existing_columns = [info[1] for info in cursor.fetchall()]
+            
+            new_columns = [
+                ("market_score", "INTEGER"),
+                ("mockup_url", "TEXT"),
+                ("risk_json", "TEXT"),
+                ("full_state_json", "TEXT")
+            ]
+            
+            for col_name, col_type in new_columns:
+                if col_name not in existing_columns:
+                    cursor.execute(f"ALTER TABLE dossiers ADD COLUMN {col_name} {col_type}")
+            
             conn.commit()
 
     def save_dossier(self, topic, problem_name, blueprint, market_score, mockup_url=None, risk_assessment=None, full_state=None):
