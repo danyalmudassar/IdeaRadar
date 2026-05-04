@@ -110,9 +110,11 @@ st.markdown("""
         border-radius: 100px !important; 
         border: none !important; 
         box-shadow: 0 20px 40px rgba(0, 255, 135, 0.3) !important; 
-        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        text-transform: uppercase;
-        letter-spacing: 2px;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important; 
+        text-transform: uppercase; 
+        letter-spacing: 2px; 
+        width: 100% !important; 
+        margin: 0.4rem 0 !important; 
     }
     div.stButton > button:hover { 
         transform: translateY(-10px) scale(1.05); 
@@ -407,7 +409,7 @@ if st.session_state.app_stage == "input":
         with c1:
             skills = st.text_input("My Skills", placeholder="e.g. Python, Marketing, Design")
         with c2:
-            budget = st.selectbox("Monthly Budget", ["$0 - $100", "$100 - $1,000", "$1,000 - $1,0000", "$10,000+"])
+            budget = st.selectbox("Monthly Budget", ["$0 - $100", "$100 - $1,000", "$1,000 - $10,000", "$10,000+"])
         with c3:
             time_avail = st.selectbox("Weekly Time", ["5-10 hrs", "10-20 hrs", "20-40 hrs", "Full Time"])
 
@@ -434,7 +436,7 @@ if st.session_state.app_stage == "processing1":
         if not tavily_key or "tvly-" not in tavily_key:
             status.update(label="❌ Configuration Error", state="error")
             st.error("**Missing Tavily API Key!** Please add `TAVILY_API_KEY` to your environment secrets.")
-            if st.button("Back to Input"):
+            if st.button("Back to Input", use_container_width=True):
                 st.session_state.app_stage = "input"
                 st.rerun()
             st.stop()
@@ -442,7 +444,7 @@ if st.session_state.app_stage == "processing1":
         if not groq_key or "gsk_" not in groq_key:
             status.update(label="❌ Configuration Error", state="error")
             st.error("**Missing Groq API Key!** Please add `GROQ_API_KEY` to your environment secrets.")
-            if st.button("Back to Input"):
+            if st.button("Back to Input", use_container_width=True):
                 st.session_state.app_stage = "input"
                 st.rerun()
             st.stop()
@@ -470,7 +472,7 @@ if st.session_state.app_stage == "processing1":
             status.update(label=f"❌ Critical Pipeline Failure", state="error")
             st.error(f"**The AI Intelligence Engine encountered an error:** {str(e)}")
             st.info("Check your API keys, network connection, or try a more specific topic.")
-            if st.button("Reset Flux Session"):
+            if st.button("Reset Flux Session", use_container_width=True):
                 st.session_state.app_stage = "input"
                 st.rerun()
 
@@ -492,7 +494,7 @@ if st.session_state.app_stage == "selection":
 
     if not problems:
         st.error("No problems were identified. Please start over.")
-        if st.button("🔄 Start New Scan"):
+        if st.button("🔄 Start New Scan", use_container_width=True):
             st.session_state.clear()
             st.rerun()
     else:

@@ -9,10 +9,33 @@ from tavily import TavilyClient
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+import re
+def extract_json(text):
+    """Extract JSON from text block using regex."""
+    try:
+        # Look for [ ... ] or { ... }
+        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+        return json.loads(text)
+    except:
+        return None
+
 
 load_dotenv()
 
-import requests
+import re
+def extract_json(text):
+    """Extract JSON from text block using regex."""
+    try:
+        # Look for [ ... ] or { ... }
+        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+        return json.loads(text)
+    except:
+        return None
+quests
 from ddgs import DDGS
 import urllib.parse
 
@@ -39,7 +62,8 @@ def scout_node(state: FluxIdeasState):
                 continue
             # Clean HTML
             clean = (text
-                     .replace("<p>", "\n").replace("</p>", "")
+                     .replace("<p>", "
+").replace("</p>", "")
                      .replace("<i>", "").replace("</i>", "")
                      .replace("<a>", "").replace("</a>", "")
                      .replace("<b>", "").replace("</b>", ""))
@@ -128,7 +152,9 @@ def researcher_node(state: FluxIdeasState):
         # If Tavily provided an AI answer for the expert search, add it as a prime finding
         macro_answer = expert_response.get("answer")
         if macro_answer:
-            research_notes.append(f"Source: Tavily Expert Synthesis\nURL: N/A\nFinding: {macro_answer}")
+            research_notes.append(f"Source: Tavily Expert Synthesis
+URL: N/A
+Finding: {macro_answer}")
             new_raw_data.append(macro_answer)
             new_raw_sources.append({
                 "text": macro_answer,
@@ -150,7 +176,9 @@ def researcher_node(state: FluxIdeasState):
             elif "youtube.com" in url: source_label = "YouTube"
             
             if len(text) > 50:
-                research_notes.append(f"Source: {title} ({source_label})\nURL: {url}\nFinding: {text}")
+                research_notes.append(f"Source: {title} ({source_label})
+URL: {url}
+Finding: {text}")
                 new_raw_data.append(text)
                 new_raw_sources.append({
                     "text": text,
@@ -178,7 +206,9 @@ def researcher_node(state: FluxIdeasState):
 
 def reasoner_node(state: FluxIdeasState):
     print("Reasoner Node: Synthesizing data and identifying patterns...")
-    raw_text = "\n\n".join(state.get('raw_data', []))
+    raw_text = "
+
+".join(state.get('raw_data', []))
     topic = state.get("topic")
     
     
@@ -243,8 +273,15 @@ def analyst_node(state: FluxIdeasState):
         title  = src.get('story_title', '')
         date   = src.get('date', '')
         text   = src.get('text', '')
-        enriched_parts.append(f"[Source {i+1}] Author: {author} | Thread: {title} | Date: {date} | URL: {url}\n{text}")
-    raw_text = "\n\n---\n\n".join(enriched_parts) if enriched_parts else "\n\n".join(state.get('raw_data', []))
+        enriched_parts.append(f"[Source {i+1}] Author: {author} | Thread: {title} | Date: {date} | URL: {url}
+{text}")
+    raw_text = "
+
+---
+
+".join(enriched_parts) if enriched_parts else "
+
+".join(state.get('raw_data', []))
     
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
     
@@ -281,8 +318,11 @@ def analyst_node(state: FluxIdeasState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        chain = prompt | llm | JsonOutputParser()
-        problems = chain.invoke({"raw_data": raw_text, "founder_context": founder_context})
+        chain = prompt | llm | StrOutputParser()
+        raw_output = chain.invoke({"raw_data": raw_text[:12000], "founder_context": founder_context})
+        problems = extract_json(raw_output)
+        if problems is None:
+            raise ValueError("Failed to parse JSON from Analyst output")
         
         # Normalize output to handle dict-wrapped lists and key variations
         if isinstance(problems, dict):
@@ -333,8 +373,20 @@ def analyst_node(state: FluxIdeasState):
 
     except Exception as e:
         print(f"Analyst Error: {e}")
-        error_problem = {"problem_name": "Error during analysis", "sentiment": str(e)[:50], "market_score": 0}
-        return {"identified_problems": [error_problem]}
+        error_problem = {
+    "problem_name": "Error during analysis",
+    "market_gap": "The system encountered an error while processing the research data.",
+    "urgency_score": 0,
+    "commercial_potential": 0,
+    "feasibility_score": 0,
+    "founder_fit_score": 0,
+    "market_score": 0,
+    "target_customer": "N/A",
+    "description": f"Details: {str(e)[:100]}",
+    "sentiment": "Error",
+    "source_refs": []
+    }
+    return {"identified_problems": [error_problem]}
 
 def strategist_node(state: FluxIdeasState):
     selected_problem = state.get('selected_problem', {})
@@ -418,17 +470,10 @@ def strategist_node(state: FluxIdeasState):
     )
 
     try:
-        chain = prompt | llm | JsonOutputParser()
-        dossier = chain.invoke({
-            "problem_name":   problem_name,
-            "description":    description,
-            "why_now":        why_now,
-            "target_customer":target_cust,
-            "evidence":       evidence,
-            "sentiment":      sentiment,
-            "market_score":   market_score,
-            "source_refs":    source_refs_str
-        })
+        chain = prompt | llm | StrOutputParser()
+        raw_output = chain.invoke({"problem_name":   problem_name,"description":    description,"why_now":        why_now,"target_customer":target_cust,"evidence":       evidence,"sentiment":      sentiment,"market_score":   market_score,"source_refs":    source_refs_str})
+        dossier = extract_json(raw_output)
+        if dossier is None: raise ValueError("Failed to parse JSON")
         return {"blueprint": dossier}
     except Exception as e:
         print(f"Strategist Error: {e}")
@@ -466,7 +511,8 @@ def economist_node(state: FluxIdeasState):
             for q in queries:
                 results = list(ddgs.text(q, max_results=3))
                 for r in results:
-                    stats_data.append(f"Title: {r.get('title')}\nSnippet: {r.get('body')}")
+                    stats_data.append(f"Title: {r.get('title')}
+Snippet: {r.get('body')}")
     except Exception as e:
         print(f"Economist Search Error: {e}")
 
@@ -494,11 +540,12 @@ def economist_node(state: FluxIdeasState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({
-            "problem_name": problem_name,
-            "target_customer": target_cust,
-            "search_data": "\n\n".join(stats_data),
+        chain = prompt | llm | StrOutputParser()
+        raw_output = chain.invoke({"problem_name": problem_name,"target_customer": target_cust,"search_data": "
+
+".join(stats_data)
+        analysis = extract_json(raw_output)
+        if analysis is None: raise ValueError("Failed to parse JSON")
             "location": location
         })
         return {"market_size_analysis": analysis}
@@ -554,10 +601,10 @@ def critic_node(state: FluxIdeasState):
     )
     
     try:
-        chain = prompt | llm | JsonOutputParser()
-        analysis = chain.invoke({
-            "problem_name": problem_name,
-            "blueprint": json.dumps(blueprint)
+        chain = prompt | llm | StrOutputParser()
+        raw_output = chain.invoke({"problem_name": problem_name,"blueprint": json.dumps(blueprint)
+        analysis = extract_json(raw_output)
+        if analysis is None: raise ValueError("Failed to parse JSON")
         })
         return {"risk_assessment": analysis}
     except Exception as e:
@@ -657,7 +704,8 @@ if __name__ == "__main__":
         print(event)
         
     # Inject a human selection
-    print("\n--- Injecting Human Selection ---")
+    print("
+--- Injecting Human Selection ---")
     app.update_state(config, {"selected_problem": {"problem_name": "Test Prob", "sentiment": "bad", "market_score": 90}})
     
     # Resume
