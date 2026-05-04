@@ -91,6 +91,7 @@ def scout_node(state: FluxIdeasState):
         return {"raw_data": raw_data, "raw_sources": sources}
 
     except Exception as e:
+        pass
         # print(f"Scout Error: {e}")
         fallback = [{"text": f"Error searching for {search_topic}: {e}",
                      "author": "N/A", "url": "", "story_title": "", "date": ""}]
@@ -199,6 +200,7 @@ def researcher_node(state: FluxIdeasState):
             "need_more_research": False # Reset flag for now
         }
     except Exception as e:
+        pass
         # print(f"Researcher Error: {e}")
         return {"research_notes": [f"Deep research failed: {e}"]}
 
@@ -235,6 +237,7 @@ def reasoner_node(state: FluxIdeasState):
         try:
             analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
         except Exception as ge:
+            pass
             # print(f"Groq API Error in Reasoner: {ge}")
             # Return a graceful failure state
             return {
@@ -251,6 +254,7 @@ def reasoner_node(state: FluxIdeasState):
             "need_more_research": need_more
         }
     except Exception as e:
+        pass
         # print(f"Reasoner Error: {e}")
         # If parsing fails, we assume it's just text or an error, don't loop
         return {"reasoning_log": f"Reasoning analysis failed: {e}", "need_more_research": False}
@@ -364,6 +368,7 @@ def analyst_node(state: FluxIdeasState):
         return {"identified_problems": problems}
 
     except Exception as e:
+        pass
         # print(f"Analyst Error: {e}")
         error_problem = {
     "problem_name": "Error during analysis",
@@ -468,6 +473,7 @@ def strategist_node(state: FluxIdeasState):
         if dossier is None: raise ValueError("Failed to parse JSON")
         return {"blueprint": dossier}
     except Exception as e:
+        pass
         # print(f"Strategist Error: {e}")
         fallback = {
             "signal_strength": {"mention_count": 0, "source_summary": "Error", "validation": str(e)},
@@ -505,6 +511,7 @@ def economist_node(state: FluxIdeasState):
                 for r in results:
                     stats_data.append(f"Title: {r.get('title')}\nSnippet: {r.get('body')}")
     except Exception as e:
+        pass
         # print(f"Economist Search Error: {e}")
 
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
@@ -542,6 +549,7 @@ def economist_node(state: FluxIdeasState):
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"market_size_analysis": analysis}
     except Exception as e:
+        pass
         # print(f"Economist Analysis Error: {e}")
         return {"market_size_analysis": {"tam": "Unknown", "sam": "Unknown", "som": "Unknown", "growth_rate": "N/A", "economist_verdict": str(e)}}
 
@@ -599,6 +607,7 @@ def critic_node(state: FluxIdeasState):
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"risk_assessment": analysis}
     except Exception as e:
+        pass
         # print(f"Critic Analysis Error: {e}")
         return {"risk_assessment": {"technical_risk": "Unknown", "market_risk": "Unknown", "legal_risk": "N/A", "kill_switch_criteria": "N/A", "survival_strategy": str(e)}}
 
