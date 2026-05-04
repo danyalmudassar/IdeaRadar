@@ -810,8 +810,14 @@ def designer_node(state: FluxIdeasState):
         Return ONLY a JSON object with:
         - "color_palette": ["Primary Hex", "Secondary Hex", "Accent Hex", "Background Hex"],
         - "typography": {{"font_family": "...", "base_size": "...", "headings": "..."}},
-        - "component_style": "1 sentence describing the visual vibe (e.g. Neo-brutalism, Glassmorphism, Minimalist)",
-        - "icon_style": "e.g. Line icons, Solid, Duo-tone"
+        - "component_style": "1 sentence describing the visual vibe",
+        - "icon_style": "e.g. Line icons",
+        - "ui_layout": {{
+            "header": "Description of top navigation",
+            "sidebar": "Description of side navigation",
+            "main_canvas": "The primary workspace or dashboard layout",
+            "primary_action": "The most prominent CTA/Button"
+          }}
         
         Return ONLY valid JSON.
         """,

@@ -768,11 +768,36 @@ if st.session_state.app_stage == "done":
 
     # ── Tab 2: The MVP ───────────────────────────────────────────────────────
     with tab2:
-        # Visual Mockup
-        mock_url = (st.session_state.current_state or {}).get("mockup_url")
-        if mock_url:
-            st.markdown("### 🎨 Visual MVP Mockup")
-            st.image(mock_url, caption=f"AI-Generated Mockup for {p_name}", use_container_width=True)
+        # UI Blueprint (Textual)
+        ds = (st.session_state.current_state or {}).get("design_system", {})
+        st.markdown("### 🗺️ Software UI Blueprint")
+        layout = ds.get("ui_layout", {})
+        if layout:
+            st.markdown(f"""
+            <div style='background:#0f172a; border: 1px solid #334155; border-radius: 16px; padding: 25px; font-family: "JetBrains Mono", monospace; box-shadow: inset 0 2px 20px rgba(0,0,0,0.5)'>
+                <div style='color: #60efff; font-weight: 800; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 15px; font-size: 0.9rem;'>
+                    [ TOP BAR ] &nbsp; {layout.get('header','')}
+                </div>
+                <div style='display: flex; min-height: 200px;'>
+                    <div style='width: 35%; border-right: 1px solid #1e293b; padding-right: 15px; color: #64748b; font-size: 0.85rem;'>
+                        <div style='color: #94a3b8; font-weight: 700; margin-bottom: 8px;'>[ SIDEBAR ]</div>
+                        {layout.get('sidebar','')}
+                    </div>
+                    <div style='width: 65%; padding-left: 15px; color: #cbd5e1; font-size: 0.85rem;'>
+                        <div style='color: #f8fafc; font-weight: 700; margin-bottom: 8px;'>[ MAIN WORKSPACE ]</div>
+                        {layout.get('main_canvas','')}
+                    </div>
+                </div>
+                <div style='margin-top: 25px; border-top: 1px solid #1e293b; padding-top: 15px; text-align: center;'>
+                    <div style='color: #00ff87; font-size: 0.75rem; margin-bottom: 8px; font-weight: 700;'>PRIMARY INTERACTION</div>
+                    <span style='background: #00ff87; color: #020617; padding: 8px 24px; border-radius: 6px; font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;'>
+                        {layout.get('primary_action','').upper()}
+                    </span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.caption("Generating UI blueprint... run a fresh scan to see the textual layout.")
             
             # Render Design System
             ds = (st.session_state.current_state or {}).get("design_system", {})
