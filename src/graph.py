@@ -34,12 +34,15 @@ def extract_json(text):
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
-    Invokes LLM. Prioritizes Gemini if GOOGLE_API_KEY is available, 
+    Invokes LLM. Prioritizes Gemini if GOOGLE_API_KEY or GEMINI_API_KEY is available, 
     otherwise falls back to Groq (Llama-3.3-70b).
     """
-    gemini_key = os.environ.get("GOOGLE_API_KEY")
+    gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     
     if gemini_key and "AIza" in gemini_key:
+        # Set GOOGLE_API_KEY if not present so ChatGoogleGenerativeAI finds it
+        if not os.environ.get("GOOGLE_API_KEY"):
+            os.environ["GOOGLE_API_KEY"] = gemini_key
         # Use Gemini
         try:
             model_name = "gemini-1.5-pro" if tier == "versatile" else "gemini-1.5-flash"
