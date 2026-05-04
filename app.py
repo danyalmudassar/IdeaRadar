@@ -368,8 +368,10 @@ with st.sidebar:
         st.caption("Provide your own keys for this session. System keys will be used if left blank.")
         u_groq = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
         u_tavily = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
+        u_gemini = st.text_input("Gemini API Key", type="password", placeholder="AIza...")
         if u_groq: os.environ["GROQ_API_KEY"] = u_groq
         if u_tavily: os.environ["TAVILY_API_KEY"] = u_tavily
+        if u_gemini: os.environ["GOOGLE_API_KEY"] = u_gemini
 
     st.markdown("---")
     st.markdown("### 🗄️ Flux Library")

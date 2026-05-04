@@ -14,6 +14,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from ddgs import DDGS
 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 load_dotenv()
 
 # --- Single Model Configuration (Per User Request) ---
@@ -32,9 +34,24 @@ def extract_json(text):
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
-    Invokes Groq using Llama-3.3-70b-versatile with a retry loop for rate limits.
+    Invokes LLM. Prioritizes Gemini if GOOGLE_API_KEY is available, 
+    otherwise falls back to Groq (Llama-3.3-70b).
     """
-    model_id = VERSATILE_MODELS[0] # Always use the first (and only) model
+    gemini_key = os.environ.get("GOOGLE_API_KEY")
+    
+    if gemini_key and "AIza" in gemini_key:
+        # Use Gemini
+        try:
+            model_name = "gemini-1.5-pro" if tier == "versatile" else "gemini-1.5-flash"
+            llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
+            chain = prompt_template | llm | StrOutputParser()
+            return chain.invoke(inputs)
+        except Exception as e:
+            # If Gemini fails, we will attempt Groq below
+            pass
+
+    # Fallback to Groq
+    model_id = VERSATILE_MODELS[0] 
     max_retries = 2
     
     for attempt in range(max_retries + 1):
@@ -48,7 +65,7 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
                 time.sleep(5) # Wait before retry
                 continue
             raise e
-    raise Exception(f"Rate limit exceeded on all models in the {tier} pool. Please wait a moment.")
+    raise Exception(f"Failed to invoke LLM (Both Gemini and Groq were unavailable or rate-limited).")
 
 def scout_node(state: FluxIdeasState):
     topic = state.get("topic")
