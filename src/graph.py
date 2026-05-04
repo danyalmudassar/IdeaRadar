@@ -652,59 +652,28 @@ def strategist_node(state: FluxIdeasState):
         Return ONLY a JSON object with these exact top-level keys:
 
         {{
-          "signal_strength": {{
-            "mention_count": <integer estimate of how many discussions exist about this pain>,
-            "source_summary": "<1 sentence: where and how often this pain appears online>",
-            "validation": "<1 sentence on why this signal is reliable>"
-          }},
-          "market_gap_score": {{
-            "total": <integer 1-10>,
-            "urgency": <integer 1-10>,
-            "commercial_potential": <integer 1-10>,
-            "feasibility": <integer 1-10>,
-            "rationale": "<2 sentences explaining the scores>"
-          }},
+          "signal_strength": {{ "mention_count": 0, "source_summary": "", "validation": "" }},
+          "market_gap_score": {{ "total": 0, "urgency": 0, "commercial_potential": 0, "feasibility": 0, "rationale": "" }},
           "voice_of_customer": [
-            {{"quote": "<verbatim or paraphrased user quote>", "author": "<username>", "source": "<HN / Reddit / Forum>", "url": "<direct link to discussion>"}},
-            {{"quote": "<another quote>", "author": "<username>", "source": "<source>", "url": "<url>"}},
-            {{"quote": "<another quote>", "author": "<username>", "source": "<source>", "url": "<url>"}}
+            {{ "quote": "", "author": "", "source": "", "url": "" }}
           ],
           "mvp_blueprint": {{
-            "feature_1": {{"name": "<name>", "description": "<what it does and why it is the core utility>"}},
-            "feature_2": {{"name": "<name>", "description": "<the hook that keeps users coming back>"}},
-            "feature_3": {{"name": "<name>", "description": "<admin or user management layer>"}}
+            "feature_1": {{ "name": "", "description": "" }},
+            "feature_2": {{ "name": "", "description": "" }},
+            "feature_3": {{ "name": "", "description": "" }}
           }},
           "competitive_landscape": [
-            {{"competitor": "<Name>", "weakness": "<their key weakness>", "your_edge": "<how you beat them>"}},
-            {{"competitor": "<Name>", "weakness": "<weakness>", "your_edge": "<edge>"}},
-            {{"competitor": "<Name>", "weakness": "<weakness>", "your_edge": "<edge>"}}
+            {{ "competitor": "", "weakness": "", "your_edge": "" }}
           ],
           "technical_roadmap": {{
-            "tech_stack": "<e.g. Next.js + Supabase + Python FastAPI>",
-            "data_model": ["<Table1: purpose>", "<Table2: purpose>", "<Table3: purpose>", "<Table4: purpose>"],
-            "timeline": "<e.g. Solo developer: 3-4 weeks to MVP>",
-            "week_plan": [
-              {{"week": 1, "focus": "<what to build>"}},
-              {{"week": 2, "focus": "<what to build>"}},
-              {{"week": 3, "focus": "<what to build>"}},
-              {{"week": 4, "focus": "<what to build>"}}
-            ]
+            "tech_stack": "",
+            "data_model": [],
+            "timeline": "",
+            "week_plan": [ {{ "week": 1, "focus": "" }} ]
           }},
-          "monetization": {{
-            "model": "<Subscription / Freemium / Transaction-based>",
-            "price_point": "<e.g. $29/user/month>",
-            "rationale": "<1-2 sentences on why this pricing makes sense for this market>"
-          },
-          "growth_strategy": {{
-            "day_1_hack": "<A specific action to get the first 10 users>",
-            "primary_channel": "<The #1 marketing channel (e.g. LinkedIn, SEO, Niche communities)>",
-            "elevator_pitch": "<The 1-sentence sales pitch>"
-          }},
-          "execution_details": {{
-            "critical_apis": ["<API 1>", "<API 2>", "<API 3>"],
-            "security_priority": "<The most important technical risk to mitigate>",
-            "infrastructure_tip": "<One tip for keeping costs low at launch>"
-          }}
+          "monetization": {{ "model": "", "price_point": "", "rationale": "" }},
+          "growth_strategy": {{ "day_1_hack": "", "primary_channel": "", "elevator_pitch": "" }},
+          "execution_details": {{ "critical_apis": [], "security_priority": "", "infrastructure_tip": "" }}
         }}
         """,
         input_variables=["problem_name", "description", "market_gap", "target_customer", "raw_context"]
@@ -788,11 +757,7 @@ def economist_node(state: FluxIdeasState):
         - "sam": "Serviceable Addressable Market",
         - "som": "Serviceable Obtainable Market (Year 1-3 goal)",
         - "growth_rate": "CAGR or industry growth percentage",
-        - "benchmarks": {{
-            "avg_ltv": "Estimated Lifetime Value per customer",
-            "target_cac": "Target Customer Acquisition Cost",
-            "payback_period": "Expected months to recoup CAC"
-          }},
+        - "benchmarks": {{ "avg_ltv": "...", "target_cac": "...", "payback_period": "..." }},
         - "economist_verdict": "2 sentence summary on market attractiveness"
         
         Return ONLY valid JSON.
