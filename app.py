@@ -182,7 +182,12 @@ if 'log_container' not in st.session_state:
 def add_log(agent, message, container=None, model=None):
     timestamp = time.strftime("%H:%M:%S")
     model_tag = f" <span style='color:#00ff87; font-size:0.75rem; border:1px solid #00ff8744; padding:1px 6px; border-radius:4px; margin-left:8px;'>{model}</span>" if model else ""
-    log_html = f"<div class='log-entry'><span style='color:#475569'>[{timestamp}]</span> <span class='log-agent'>{agent.upper()}</span>{model_tag}: {message}</div>"
+    
+    # Check for error status
+    is_error = "❌" in message or "error" in message.lower()
+    msg_color = "#ef4444" if is_error else "#e2e8f0"
+    
+    log_html = f"<div class='log-entry'><span style='color:#475569'>[{timestamp}]</span> <span class='log-agent'>{agent.upper()}</span>{model_tag}: <span style='color:{msg_color}'>{message}</span></div>"
     st.session_state.live_logs.append(log_html)
     
     if len(st.session_state.live_logs) > 30:

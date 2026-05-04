@@ -304,12 +304,13 @@ def scout_node(state: FluxIdeasState):
             "log_message": f"Multi-signal scout complete: {len(hn_sources)} HN discussions, {len(reddit_sources)} Reddit threads, and {len(ph_sources)} ProductHunt reviews indexed."
         }
 
-    except Exception as e:
-        pass
-        # print(f"Scout Error: {e}")
         fallback = [{"text": f"Error searching for {search_topic}: {e}",
                      "author": "N/A", "url": "", "story_title": "", "date": ""}]
-        return {"raw_data": [fallback[0]["text"]], "raw_sources": fallback}
+        return {
+            "raw_data": [fallback[0]["text"]], 
+            "raw_sources": fallback,
+            "log_message": f"❌ Scout Error: {str(e)[:100]}"
+        }
 
 def researcher_node(state: FluxIdeasState):
     topic = state.get("topic")
@@ -430,9 +431,10 @@ def researcher_node(state: FluxIdeasState):
             "log_message": f"Deep-dive round {current_rounds} complete. Extracted full technical content from {len(extraction_urls)} high-signal URLs and processed {len(all_results)} search snippets."
         }
     except Exception as e:
-        pass
-        # print(f"Researcher Error: {e}")
-        return {"research_notes": [f"Deep research failed: {e}"]}
+        return {
+            "research_notes": [f"Deep research failed: {e}"],
+            "log_message": f"❌ Researcher Error: {str(e)[:100]}"
+        }
 
 def reasoner_node(state: FluxIdeasState):
     # print("Reasoner Node: Synthesizing data and identifying patterns...")
@@ -480,10 +482,11 @@ def reasoner_node(state: FluxIdeasState):
             "log_message": "Deep reasoning complete. Market data synthesized into core pain-point clusters and actionable intelligence."
         }
     except Exception as e:
-        pass
-        # print(f"Reasoner Error: {e}")
-        # If parsing fails, we assume it's just text or an error, don't loop
-        return {"reasoning_log": f"Reasoning analysis failed: {e}", "need_more_research": False}
+        return {
+            "reasoning_log": f"Reasoning analysis failed: {e}", 
+            "need_more_research": False,
+            "log_message": f"❌ Reasoner Error: {str(e)[:100]}"
+        }
 
 
 
@@ -614,22 +617,23 @@ def analyst_node(state: FluxIdeasState):
         }
 
     except Exception as e:
-        pass
-        # print(f"Analyst Error: {e}")
         error_problem = {
-    "problem_name": "Error during analysis",
-    "market_gap": "The system encountered an error while processing the research data.",
-    "urgency_score": 0,
-    "commercial_potential": 0,
-    "feasibility_score": 0,
-    "founder_fit_score": 0,
-    "market_score": 0,
-    "target_customer": "N/A",
-    "description": f"Details: {str(e)[:100]}",
-    "sentiment": "Error",
-    "source_refs": []
-    }
-    return {"identified_problems": [error_problem]}
+            "problem_name": "Error during analysis",
+            "market_gap": "The system encountered an error while processing the research data.",
+            "urgency_score": 0,
+            "commercial_potential": 0,
+            "feasibility_score": 0,
+            "founder_fit_score": 0,
+            "market_score": 0,
+            "target_customer": "N/A",
+            "description": f"Details: {str(e)[:100]}",
+            "sentiment": "Error",
+            "source_refs": []
+        }
+        return {
+            "identified_problems": [error_problem],
+            "log_message": f"❌ Analyst Error: {str(e)[:100]}"
+        }
 
 def strategist_node(state: FluxIdeasState):
     selected_problem = state.get('selected_problem', {})
@@ -700,8 +704,6 @@ def strategist_node(state: FluxIdeasState):
             "log_message": f"Strategist dossier generated for {problem_name}. Blueprint covers MVP features, monetization, and growth strategy."
         }
     except Exception as e:
-        pass
-        # print(f"Strategist Error: {e}")
         fallback = {
             "signal_strength": {"mention_count": 0, "source_summary": "Error", "validation": str(e)},
             "market_gap_score": {"total": 0, "urgency": 0, "commercial_potential": 0, "feasibility": 0, "rationale": ""},
@@ -711,7 +713,10 @@ def strategist_node(state: FluxIdeasState):
             "technical_roadmap": {"tech_stack": "", "data_model": [], "timeline": "", "week_plan": []},
             "monetization": {"model": "", "price_point": "", "rationale": ""}
         }
-        return {"blueprint": fallback}
+        return {
+            "blueprint": fallback,
+            "log_message": f"❌ Strategist Error: {str(e)[:100]}"
+        }
 
 
 def economist_node(state: FluxIdeasState):
@@ -785,9 +790,10 @@ def economist_node(state: FluxIdeasState):
             "log_message": f"Economic projections complete: TAM {analysis.get('tam')}, SAM {analysis.get('sam')}, SOM {analysis.get('som')} calculated."
         }
     except Exception as e:
-        pass
-        # print(f"Economist Analysis Error: {e}")
-        return {"market_size_analysis": {"tam": "Unknown", "sam": "Unknown", "som": "Unknown", "growth_rate": "N/A", "economist_verdict": str(e)}}
+        return {
+            "market_size_analysis": {"tam": "Unknown", "sam": "Unknown", "som": "Unknown", "growth_rate": "N/A", "economist_verdict": str(e)},
+            "log_message": f"❌ Economist Error: {str(e)[:100]}"
+        }
 
 def designer_node(state: FluxIdeasState):
     blueprint = state.get('blueprint', {})
