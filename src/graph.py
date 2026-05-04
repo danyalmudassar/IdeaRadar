@@ -278,8 +278,10 @@ def analyst_node(state: FluxIdeasState):
         title  = src.get('story_title', '')
         date   = src.get('date', '')
         text   = src.get('text', '')
-        enriched_parts.append(f"[Source {i+1}] Author: {author} | Thread: {title} | Date: {date} | URL: {url}
-{text}")
+        enriched_parts.append(
+    f"""[Source {i+1}] Author: {author} | Thread: {title} | Date: {date} | URL: {url}
+{text}"""
+)
     raw_text = "
 
 ---
