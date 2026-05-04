@@ -282,13 +282,7 @@ def analyst_node(state: FluxIdeasState):
     f"""[Source {i+1}] Author: {author} | Thread: {title} | Date: {date} | URL: {url}
 {text}"""
 )
-    raw_text = "
-
----
-
-".join(enriched_parts) if enriched_parts else "
-
-".join(state.get('raw_data', []))
+    raw_text = "\n".join(enriched_parts) if enriched_parts else "\n".join(state.get('raw_data', []))
     
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
     
@@ -518,8 +512,7 @@ def economist_node(state: FluxIdeasState):
             for q in queries:
                 results = list(ddgs.text(q, max_results=3))
                 for r in results:
-                    stats_data.append(f"Title: {r.get('title')}
-Snippet: {r.get('body')}")
+                    stats_data.append(f"Title: {r.get('title')}\nSnippet: {r.get('body')}")
     except Exception as e:
         print(f"Economist Search Error: {e}")
 
@@ -548,13 +541,14 @@ Snippet: {r.get('body')}")
     
     try:
         chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({"problem_name": problem_name,"target_customer": target_cust,"search_data": "
-
-".join(stats_data)
-        analysis = extract_json(raw_output)
-        if analysis is None: raise ValueError("Failed to parse JSON")
+        raw_output = chain.invoke({
+            "problem_name": problem_name,
+            "target_customer": target_cust,
+            "search_data": "\n\n".join(stats_data),
             "location": location
         })
+        analysis = extract_json(raw_output)
+        if analysis is None: raise ValueError("Failed to parse JSON")
         return {"market_size_analysis": analysis}
     except Exception as e:
         print(f"Economist Analysis Error: {e}")
@@ -609,10 +603,9 @@ def critic_node(state: FluxIdeasState):
     
     try:
         chain = prompt | llm | StrOutputParser()
-        raw_output = chain.invoke({"problem_name": problem_name,"blueprint": json.dumps(blueprint)
+        raw_output = chain.invoke({"problem_name": problem_name, "blueprint": json.dumps(blueprint)})
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
-        })
         return {"risk_assessment": analysis}
     except Exception as e:
         print(f"Critic Analysis Error: {e}")
@@ -711,8 +704,7 @@ if __name__ == "__main__":
         print(event)
         
     # Inject a human selection
-    print("
---- Injecting Human Selection ---")
+    print("\n--- Injecting Human Selection ---")
     app.update_state(config, {"selected_problem": {"problem_name": "Test Prob", "sentiment": "bad", "market_score": 90}})
     
     # Resume
