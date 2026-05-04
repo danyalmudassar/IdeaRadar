@@ -31,18 +31,35 @@ FAST_MODELS = [
 ]
 
 def extract_json(text):
-    """Extract JSON from text block using regex."""
+    """Extract JSON from text block using regex with better robustness."""
+    if not text:
+        return None
     try:
-        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
+        # Try finding the largest block that looks like JSON
+        # Look for [ at start and ] at end, or { at start and } at end
+        start_bracket = text.find('[')
+        start_brace = text.find('{')
+        
+        if start_bracket == -1 and start_brace == -1:
+            return None
+            
+        if start_bracket != -1 and (start_brace == -1 or start_bracket < start_brace):
+            end_bracket = text.rfind(']')
+            if end_bracket != -1:
+                return json.loads(text[start_bracket:end_bracket+1])
+        
+        if start_brace != -1:
+            end_brace = text.rfind('}')
+            if end_brace != -1:
+                return json.loads(text[start_brace:end_brace+1])
+                
         return json.loads(text)
     except:
         return None
 
-def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
+def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1, validator=None):
     """
-    Invokes Groq with automatic model switching if rate limited.
+    Invokes Groq with automatic model switching if rate limited OR if validation fails.
     """
     models = VERSATILE_MODELS if tier == "versatile" else FAST_MODELS
     last_error = None
@@ -51,16 +68,22 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
         try:
             llm = ChatGroq(model=model_id, temperature=temperature)
             chain = prompt_template | llm | StrOutputParser()
-            return chain.invoke(inputs)
+            output = chain.invoke(inputs)
+            
+            # If a validator is provided (like extract_json), check the output
+            if validator:
+                validated_output = validator(output)
+                if validated_output is None:
+                    # print(f"Validation failed for {model_id}, trying next model...")
+                    continue # Try next model
+                return output # Return original text (nodes handle the parsing)
+            
+            return output
         except Exception as e:
             err_msg = str(e).lower()
             if "rate_limit" in err_msg or "429" in err_msg or "overloaded" in err_msg or "too many requests" in err_msg:
-                # If rate limited, try the next model in the pool
                 continue
-            # If it's a different error (e.g. auth, syntax), raise it
             raise e
-            
-    # If we exhausted all models, raise the last rate limit error
     raise Exception(f"Rate limit exceeded on all models in the {tier} pool. Please wait a moment.")
 
 def scout_node(state: FluxIdeasState):
@@ -263,7 +286,7 @@ def reasoner_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2)
+        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2, validator=extract_json)
         analysis = extract_json(raw_output)
         if analysis is None:
             raise ValueError("Failed to parse JSON from Reasoner output")
@@ -335,7 +358,7 @@ def analyst_node(state: FluxIdeasState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0)
+        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0, validator=extract_json)
         problems = extract_json(raw_output)
         if problems is None:
             raise ValueError("Failed to parse JSON from Analyst output")
@@ -481,7 +504,7 @@ def strategist_node(state: FluxIdeasState):
             "target_customer": target_cust,
             "market_gap": market_gap,
             "raw_context": raw_text[:10000]
-        }, tier="versatile", temperature=0.3)
+        }, tier="versatile", temperature=0.3, validator=extract_json)
         blueprint = extract_json(raw_output)
         if blueprint is None: raise ValueError("Failed to parse JSON")
         return {"blueprint": blueprint}
@@ -556,7 +579,7 @@ def economist_node(state: FluxIdeasState):
             "target_customer": target_cust,
             "search_data": "\n\n".join(stats_data),
             "location": location
-        }, tier="versatile", temperature=0)
+        }, tier="versatile", temperature=0, validator=extract_json)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"market_size_analysis": analysis}
@@ -613,7 +636,7 @@ def critic_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {"problem_name": problem_name, "blueprint": json.dumps(blueprint)}, tier="versatile", temperature=0)
+        raw_output = invoke_llm(prompt, {"problem_name": problem_name, "blueprint": json.dumps(blueprint)}, tier="versatile", temperature=0, validator=extract_json)
         analysis = extract_json(raw_output)
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"risk_assessment": analysis}
