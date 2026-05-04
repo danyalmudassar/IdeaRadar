@@ -465,8 +465,11 @@ if st.session_state.app_stage == "processing1":
                 st.session_state.app_stage = "done"
                 st.rerun()
         except Exception as e:
+            import traceback
             status.update(label=f"❌ Critical Pipeline Failure", state="error")
             st.error(f"**The AI Intelligence Engine encountered an error:** {str(e)}")
+            with st.expander("🛠️ Debug Traceback (For Developers)"):
+                st.code(traceback.format_exc())
             st.info("Check your API keys, network connection, or try a more specific topic.")
             if st.button("Reset Flux Session"):
                 st.session_state.app_stage = "input"

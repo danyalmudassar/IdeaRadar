@@ -39,7 +39,7 @@ def scout_node(state: FluxIdeasState):
     if location and location.lower() != "global":
         search_topic = f"{topic} in {location}"
         
-    print(f"Scout Node: Deep searching for pain points related to '{search_topic}'...")
+    # print(f"Scout Node: Deep searching for pain points related to '{search_topic}'...")
 
     def scrape_hn(query, hits=12):
         """Hit HackerNews Algolia API and return list of rich source dicts."""
@@ -91,7 +91,7 @@ def scout_node(state: FluxIdeasState):
         return {"raw_data": raw_data, "raw_sources": sources}
 
     except Exception as e:
-        print(f"Scout Error: {e}")
+        # print(f"Scout Error: {e}")
         fallback = [{"text": f"Error searching for {search_topic}: {e}",
                      "author": "N/A", "url": "", "story_title": "", "date": ""}]
         return {"raw_data": [fallback[0]["text"]], "raw_sources": fallback}
@@ -105,7 +105,7 @@ def researcher_node(state: FluxIdeasState):
     if location and location.lower() != "global":
         search_topic = f"{topic} in {location}"
         
-    print(f"Researcher Node: Diving deeper into '{search_topic}' via Tavily AI...")
+    # print(f"Researcher Node: Diving deeper into '{search_topic}' via Tavily AI...")
     
     research_notes = []
     new_raw_data = []
@@ -199,11 +199,11 @@ def researcher_node(state: FluxIdeasState):
             "need_more_research": False # Reset flag for now
         }
     except Exception as e:
-        print(f"Researcher Error: {e}")
+        # print(f"Researcher Error: {e}")
         return {"research_notes": [f"Deep research failed: {e}"]}
 
 def reasoner_node(state: FluxIdeasState):
-    print("Reasoner Node: Synthesizing data and identifying patterns...")
+    # print("Reasoner Node: Synthesizing data and identifying patterns...")
     raw_text = "\n".join(state.get('raw_data', []))
     topic = state.get("topic")
     
@@ -235,7 +235,7 @@ def reasoner_node(state: FluxIdeasState):
         try:
             analysis = chain.invoke({"topic": topic, "raw_data": raw_text[:8000]}) # Limit text length for LLM
         except Exception as ge:
-            print(f"Groq API Error in Reasoner: {ge}")
+            # print(f"Groq API Error in Reasoner: {ge}")
             # Return a graceful failure state
             return {
                 "reasoning_log": json.dumps({"quality_check": "FAIL", "full_verdict": f"Groq Error: {ge}"}),
@@ -251,14 +251,14 @@ def reasoner_node(state: FluxIdeasState):
             "need_more_research": need_more
         }
     except Exception as e:
-        print(f"Reasoner Error: {e}")
+        # print(f"Reasoner Error: {e}")
         # If parsing fails, we assume it's just text or an error, don't loop
         return {"reasoning_log": f"Reasoning analysis failed: {e}", "need_more_research": False}
 
 
 
 def analyst_node(state: FluxIdeasState):
-    print(f"Analyst Node: Analyzing {len(state.get('raw_data', []))} raw data points...")
+    # print(f"Analyst Node: Analyzing {len(state.get('raw_data', []))} raw data points...")
     
     # Build enriched text with source attribution
     sources = state.get('raw_sources', [])
@@ -364,7 +364,7 @@ def analyst_node(state: FluxIdeasState):
         return {"identified_problems": problems}
 
     except Exception as e:
-        print(f"Analyst Error: {e}")
+        # print(f"Analyst Error: {e}")
         error_problem = {
     "problem_name": "Error during analysis",
     "market_gap": "The system encountered an error while processing the research data.",
@@ -391,7 +391,7 @@ def strategist_node(state: FluxIdeasState):
     market_score = selected_problem.get('market_score', 0)
     source_refs  = selected_problem.get('source_refs', [])
     source_refs_str = json.dumps(source_refs) if source_refs else '[]'
-    print(f"Strategist Node: Building full dossier for '{problem_name}'...")
+    # print(f"Strategist Node: Building full dossier for '{problem_name}'...")
 
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
 
@@ -468,7 +468,7 @@ def strategist_node(state: FluxIdeasState):
         if dossier is None: raise ValueError("Failed to parse JSON")
         return {"blueprint": dossier}
     except Exception as e:
-        print(f"Strategist Error: {e}")
+        # print(f"Strategist Error: {e}")
         fallback = {
             "signal_strength": {"mention_count": 0, "source_summary": "Error", "validation": str(e)},
             "market_gap_score": {"total": 0, "urgency": 0, "commercial_potential": 0, "feasibility": 0, "rationale": ""},
@@ -489,7 +489,7 @@ def economist_node(state: FluxIdeasState):
     founder_profile = state.get('founder_profile', {})
     location = founder_profile.get('location', 'Global')
     
-    print(f"Economist Node: Calculating market size for '{problem_name}' in {location}...")
+    # print(f"Economist Node: Calculating market size for '{problem_name}' in {location}...")
     
     queries = [
         f"{problem_name} market size statistics in {location}",
@@ -505,7 +505,7 @@ def economist_node(state: FluxIdeasState):
                 for r in results:
                     stats_data.append(f"Title: {r.get('title')}\nSnippet: {r.get('body')}")
     except Exception as e:
-        print(f"Economist Search Error: {e}")
+        # print(f"Economist Search Error: {e}")
 
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
 
@@ -542,7 +542,7 @@ def economist_node(state: FluxIdeasState):
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"market_size_analysis": analysis}
     except Exception as e:
-        print(f"Economist Analysis Error: {e}")
+        # print(f"Economist Analysis Error: {e}")
         return {"market_size_analysis": {"tam": "Unknown", "sam": "Unknown", "som": "Unknown", "growth_rate": "N/A", "economist_verdict": str(e)}}
 
 def designer_node(state: FluxIdeasState):
@@ -550,7 +550,7 @@ def designer_node(state: FluxIdeasState):
     problem_name = state.get('selected_problem', {}).get('problem_name', 'Software')
     mvp = blueprint.get('mvp_blueprint', {})
     
-    print(f"Designer Node: Generating visual mockup for '{problem_name}'...")
+    # print(f"Designer Node: Generating visual mockup for '{problem_name}'...")
     
     # Construct a descriptive prompt for the AI image generator
     features = [v.get('name', '') for k, v in mvp.items() if isinstance(v, dict)]
@@ -567,7 +567,7 @@ def critic_node(state: FluxIdeasState):
     problem_name = selected_problem.get('problem_name', 'Unknown')
     blueprint = state.get('blueprint', {})
     
-    print(f"Critic Node: Stress-testing '{problem_name}'...")
+    # print(f"Critic Node: Stress-testing '{problem_name}'...")
     
     
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.8)
@@ -599,11 +599,11 @@ def critic_node(state: FluxIdeasState):
         if analysis is None: raise ValueError("Failed to parse JSON")
         return {"risk_assessment": analysis}
     except Exception as e:
-        print(f"Critic Analysis Error: {e}")
+        # print(f"Critic Analysis Error: {e}")
         return {"risk_assessment": {"technical_risk": "Unknown", "market_risk": "Unknown", "legal_risk": "N/A", "kill_switch_criteria": "N/A", "survival_strategy": str(e)}}
 
 def orchestrator_node(state: FluxIdeasState):
-    print("Orchestrator Node: Evaluating workflow state...")
+    # print("Orchestrator Node: Evaluating workflow state...")
     raw_data  = state.get("raw_data", [])
     research  = state.get("research_notes", [])
     reasoning = state.get("reasoning_log", "")
@@ -621,7 +621,7 @@ def orchestrator_node(state: FluxIdeasState):
     
     # Loop back to research if quality was low and we haven't looped too much
     if need_more and rounds < 2:
-        print("Orchestrator: Low quality research detected. Triggering Round 2...")
+        # print("Orchestrator: Low quality research detected. Triggering Round 2...")
         return {"next_agent": "researcher"}
 
     if not research:
@@ -644,7 +644,7 @@ def orchestrator_node(state: FluxIdeasState):
     return {"next_agent": "END"}
 
 def ask_human_node(state: FluxIdeasState):
-    print("Human Node: Paused for human input.")
+    # print("Human Node: Paused for human input.")
     return {}
 
 def route_from_orchestrator(state: FluxIdeasState):
@@ -688,16 +688,16 @@ if __name__ == "__main__":
     # Test pass-through manually
     config = {"configurable": {"thread_id": "test_thread"}}
     initial_state = {"topic": "Remote Team Management"}
-    print("Starting FluxIdeas Pipeline...")
+    # print("Starting FluxIdeas Pipeline...")
     
     # Run until interrupt
     for event in app.stream(initial_state, config=config):
-        print(event)
+        pass
         
     # Inject a human selection
-    print("\n--- Injecting Human Selection ---")
+    # print("\n--- Injecting Human Selection ---")
     app.update_state(config, {"selected_problem": {"problem_name": "Test Prob", "sentiment": "bad", "market_score": 90}})
     
     # Resume
     for event in app.stream(None, config=config):
-        print(event)
+        pass
