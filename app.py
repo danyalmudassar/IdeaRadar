@@ -416,38 +416,6 @@ with st.sidebar:
         else:
             st.caption("Waiting for mission start...")
     
-    st.markdown("---")
-    st.markdown("### ⚙️ API Management")
-    with st.expander("🔑 Use Your Own Keys", expanded=False):
-        st.caption("Provide your own keys for this session. System keys will be used if left blank.")
-        u_groq = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
-        u_tavily = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
-        u_gemini = st.text_input("Gemini API Key", type="password", placeholder="AIza...", value=os.environ.get("GEMINI_API_KEY", ""))
-        u_openrouter = st.text_input("OpenRouter API Key", type="password", placeholder="sk-or-...", value=os.environ.get("OPENROUTER_API_KEY", ""))
-        if u_groq: os.environ["GROQ_API_KEY"] = u_groq
-        if u_tavily: os.environ["TAVILY_API_KEY"] = u_tavily
-        if u_gemini: os.environ["GEMINI_API_KEY"] = u_gemini
-        if u_openrouter: os.environ["OPENROUTER_API_KEY"] = u_openrouter
-
-    st.markdown("---")
-    st.markdown("### 🗄️ Flux Library")
-    items = db.get_all_dossiers()
-    if not items:
-        st.info("No saved intelligence dossiers yet.")
-    else:
-        for item in items:
-            # Create a label with date and topic
-            date_str = item['created_at'][:10]
-            label = f"{date_str}: {item['problem_name']}"
-            if st.button(label, key=f"arch_{item['id']}", use_container_width=True):
-                st.session_state.archived_dossier = item
-                st.session_state.app_stage = "view_archive"
-                st.rerun()
-    
-    st.markdown("---")
-    if st.button("➕ Start New Flux", use_container_width=True):
-        st.session_state.clear()
-        st.rerun()
 
 # ── Main UI Logic ───────────────────────────────────────────────────
 # Stage: INPUT
