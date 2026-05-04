@@ -4,6 +4,7 @@ from src.state import FluxIdeasState
 import time
 import os
 import json
+import requests
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from langchain_groq import ChatGroq
@@ -24,18 +25,8 @@ def extract_json(text):
 
 load_dotenv()
 
+import requests
 import re
-def extract_json(text):
-    """Extract JSON from text block using regex."""
-    try:
-        # Look for [ ... ] or { ... }
-        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-        return json.loads(text)
-    except:
-        return None
-quests
 from ddgs import DDGS
 import urllib.parse
 
