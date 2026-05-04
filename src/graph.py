@@ -15,6 +15,7 @@ from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from ddgs import DDGS
 
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -34,11 +35,12 @@ def extract_json(text):
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
-    Ultimate Fallback Engine: Rotates through Gemini and Groq models
-    to bypass rate limits on both platforms.
+    Ultimate Fallback Engine: Rotates through Gemini, OpenRouter, and Groq 
+    to bypass rate limits on all platforms.
     """
     gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     groq_key = os.environ.get("GROQ_API_KEY")
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
 
     # Define the "Resilience Chain"
     # (Provider, Model ID)
@@ -47,6 +49,11 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
         resilience_chain.extend([
             ("gemini", "gemini-2.5-pro"),
             ("gemini", "gemini-2.5-flash")
+        ])
+    if openrouter_key:
+        resilience_chain.extend([
+            ("openrouter", "deepseek/deepseek-chat"),
+            ("openrouter", "meta-llama/llama-3.3-70b-instruct")
         ])
     if groq_key:
         resilience_chain.extend([
@@ -57,10 +64,20 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     for provider, model_id in resilience_chain:
         try:
             if provider == "gemini":
-                # Ensure the SDK has the key
                 if not os.environ.get("GOOGLE_API_KEY"):
                     os.environ["GOOGLE_API_KEY"] = gemini_key
                 llm = ChatGoogleGenerativeAI(model=model_id, temperature=temperature)
+            elif provider == "openrouter":
+                llm = ChatOpenAI(
+                    model=model_id,
+                    temperature=temperature,
+                    openai_api_key=openrouter_key,
+                    openai_api_base="https://openrouter.ai/api/v1",
+                    default_headers={
+                        "HTTP-Referer": "https://idearadar.app",
+                        "X-Title": "IdeaRadar"
+                    }
+                )
             else:
                 llm = ChatGroq(model=model_id, temperature=temperature)
             
@@ -68,13 +85,12 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
             return chain.invoke(inputs)
         except Exception as e:
             err_msg = str(e).lower()
-            # If rate limited, overloaded, or quota exhausted, try next model
             if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted"]):
-                time.sleep(2) # Small buffer
+                time.sleep(2)
                 continue
             raise e
             
-    raise Exception("All intelligence engines (Gemini & Groq) are currently at their rate limits. Please try again in 60 seconds.")
+    raise Exception("All intelligence engines (Gemini, OpenRouter & Groq) are currently at their rate limits. Please try again in 60 seconds.")
 
 def scout_node(state: FluxIdeasState):
     topic = state.get("topic")

@@ -369,9 +369,11 @@ with st.sidebar:
         u_groq = st.text_input("Groq API Key", type="password", placeholder="gsk_...")
         u_tavily = st.text_input("Tavily API Key", type="password", placeholder="tvly-...")
         u_gemini = st.text_input("Gemini API Key", type="password", placeholder="AIza...", value=os.environ.get("GEMINI_API_KEY", ""))
+        u_openrouter = st.text_input("OpenRouter API Key", type="password", placeholder="sk-or-...", value=os.environ.get("OPENROUTER_API_KEY", ""))
         if u_groq: os.environ["GROQ_API_KEY"] = u_groq
         if u_tavily: os.environ["TAVILY_API_KEY"] = u_tavily
         if u_gemini: os.environ["GEMINI_API_KEY"] = u_gemini
+        if u_openrouter: os.environ["OPENROUTER_API_KEY"] = u_openrouter
 
     st.markdown("---")
     st.markdown("### 🗄️ Flux Library")
