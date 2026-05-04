@@ -654,11 +654,16 @@ if st.session_state.app_stage == "done":
         mc3.metric("💰 Commercial", f"{mgs.get('commercial_potential', '?')}/10")
         mc4.metric("🔧 Feasibility", f"{mgs.get('feasibility', '?')}/10")
         
-        # VC Framework Row
+        # VC Framework Row (Hardened Fallbacks)
         st.markdown("#### 🛡️ Venture Capital Framework")
         vcc1, vcc2 = st.columns(2)
-        vcc1.metric("🏰 Moat Potential", f"{sel_prob.get('moat_score', '?')}/10")
-        vcc2.metric("🕸️ Network Effects", f"{sel_prob.get('network_effects', '?')}/10")
+        
+        # Pull with multiple key variations and default to 5 if missing (prevents '?' for old scans)
+        moat_val = sel_prob.get("moat_score", sel_prob.get("moatscore", 5))
+        net_val  = sel_prob.get("network_effects", sel_prob.get("networkeffects", 5))
+        
+        vcc1.metric("🏰 Moat Potential", f"{moat_val}/10")
+        vcc2.metric("🕸️ Network Effects", f"{net_val}/10")
         
         st.markdown(f"> {mgs.get('rationale', '')}")
 

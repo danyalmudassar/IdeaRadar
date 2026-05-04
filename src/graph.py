@@ -575,12 +575,20 @@ def analyst_node(state: FluxIdeasState):
                     "network_effects": norm_p.get("networkeffects", p.get("network_effects", 5)),
                     "feasibility_score": norm_p.get("feasibilityscore", norm_p.get("feasibility", p.get("feasibility_score", 5))),
                     "founder_fit_score": norm_p.get("founderfitscore", norm_p.get("founderfit", p.get("founder_fit_score", 5))),
-                    "market_score": norm_p.get("marketscore", p.get("market_score", 50)), # might be out of 10 or 100
+                    "market_score": norm_p.get("marketscore", p.get("market_score", 50)), 
                     "target_customer": norm_p.get("targetcustomer", p.get("target_customer", "Unknown")),
                     "description": norm_p.get("description", norm_p.get("problem", p.get("description", ""))),
                     "sentiment": norm_p.get("sentiment", p.get("sentiment", "Neutral")),
                     "source_refs": p.get("source_refs", [])
                 }
+                
+                # Double-check Moat and Network Effects (Force integers)
+                for key in ["moat_score", "network_effects"]:
+                    try:
+                        val = new_p.get(key)
+                        new_p[key] = int(float(val)) if val is not None else 5
+                    except:
+                        new_p[key] = 5
                 
                 # Normalize market score to be out of 10 if it seems to be out of 100
                 try:
