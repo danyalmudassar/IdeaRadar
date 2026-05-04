@@ -359,6 +359,18 @@ def process_stream(stream_generator, status_container, log_container=None):
             # Detailed Log Capture
             detailed_log = value.get('log_message')
             
+            # Define Phases for visual clarity
+            phases = {
+                "scout": ("Phase 1/4: Data Discovery", "🕵️‍♂️"),
+                "researcher": ("Phase 1/4: Data Discovery", "🔍"),
+                "reasoner": ("Phase 2/4: Intelligence Synthesis", "🧠"),
+                "analyst": ("Phase 2/4: Intelligence Synthesis", "📊"),
+                "strategist": ("Phase 3/4: Business Architecture", "📈"),
+                "economist": ("Phase 3/4: Business Architecture", "💰"),
+                "designer": ("Phase 3/4: Business Architecture", "🎨"),
+                "critic": ("Phase 4/4: Critical Risk Audit", "🛡️")
+            }
+
             if key == "orchestrator":
                 next_a = value.get('next_agent')
                 status_container.update(label=f"🤖 Orchestrator: Routing to {next_a}...", state="running")
@@ -366,31 +378,22 @@ def process_stream(stream_generator, status_container, log_container=None):
                 add_log("orchestrator", f"Decision: Handing over mission to {next_a.upper()}.", log_container)
                 if next_a != "END" and next_a != "ask_human":
                     add_log(next_a, "Initializing agent systems... thinking...", log_container)
-            elif key == "scout":
-                status_container.update(label="🕵️‍♂️ Scout Agent: Crawling Multi-Signal Feed...", state="running")
-                if detailed_log: add_log("scout", detailed_log, log_container)
-            elif key == "researcher":
-                status_container.update(label="🔍 Researcher Agent: Running Deep Extractions...", state="running")
-                if detailed_log: add_log("researcher", detailed_log, log_container)
-            elif key == "reasoner":
-                status_container.update(label="🧠 Reasoner Agent: Performing Deep Reasoning...", state="running")
-                if detailed_log: add_log("reasoner", detailed_log, log_container, model=current_model)
-            elif key == "analyst":
-                status_container.update(label="📊 Analyst Agent: Ranking Market Gaps...", state="running")
-                if detailed_log: add_log("analyst", detailed_log, log_container, model=current_model)
-            elif key == "strategist":
-                status_container.update(label="📈 Strategist Agent: Drafting Business Plan...", state="running")
-                if detailed_log: add_log("strategist", detailed_log, log_container, model=current_model)
-            elif key == "economist":
-                status_container.update(label="💰 Economist Agent: Calculating TAM/SAM/SOM...", state="running")
-                if detailed_log: add_log("economist", detailed_log, log_container, model=current_model)
-            elif key == "designer":
-                status_container.update(label="🎨 Designer Agent: Creating Visual Mockup...", state="running")
-                if detailed_log: add_log("designer", detailed_log, log_container, model=current_model)
-            elif key == "critic":
-                status_container.update(label="🕵️‍♂️ Critic Agent: Final Risk Audit...", state="running")
-                if detailed_log: add_log("critic", detailed_log, log_container, model=current_model)
-                progress_bar.empty()
+            elif key in phases:
+                phase_name, phase_icon = phases[key]
+                status_container.update(label=f"{phase_icon} {phase_name}: {key.capitalize()} in progress...", state="running")
+                
+                # Show detailed updates inside the expander
+                with status_container:
+                    st.markdown(f"**{phase_icon} {key.capitalize()} Update:**")
+                    if detailed_log:
+                        st.caption(detailed_log)
+                
+                # Global Log
+                if detailed_log:
+                    add_log(key, detailed_log, log_container, model=current_model)
+                
+                if key == "critic":
+                    progress_bar.empty()
 
 # ── Sidebar: Flux Library ──────────────────────────────────────────
 with st.sidebar:
