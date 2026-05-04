@@ -157,9 +157,11 @@ def researcher_node(state: FluxIdeasState):
         # If Tavily provided an AI answer for the expert search, add it as a prime finding
         macro_answer = expert_response.get("answer")
         if macro_answer:
-            research_notes.append(f"Source: Tavily Expert Synthesis
-URL: N/A
-Finding: {macro_answer}")
+            research_notes.append(
+    f"Source: Tavily Expert Synthesis\n"
+    f"URL: N/A\n"
+    f"Finding: {macro_answer}"
+)
             new_raw_data.append(macro_answer)
             new_raw_sources.append({
                 "text": macro_answer,
