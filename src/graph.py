@@ -24,14 +24,38 @@ VERSATILE_MODELS = ["llama-3.3-70b-versatile"]
 FAST_MODELS      = ["llama-3.3-70b-versatile"]
 
 def extract_json(text):
-    """Extract JSON from text block using regex."""
+    """Robustly extract and parse JSON from text, handling conversational noise."""
+    if not text: return None
+    
+    # 1. Try direct parse
     try:
-        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-        return json.loads(text)
+        return json.loads(text.strip())
     except:
-        return None
+        pass
+        
+    # 2. Try regex-based extraction (finding the outermost [] or {})
+    try:
+        # Finding the first '[' or '{'
+        start_idx_list = [text.find('['), text.find('{')]
+        start_idx = min([i for i in start_idx_list if i != -1] or [len(text)])
+        
+        # Finding the last ']' or '}'
+        end_idx_list = [text.rfind(']'), text.rfind('}')]
+        end_idx = max([i for i in end_idx_list if i != -1] or [-1])
+        
+        if start_idx < end_idx:
+            json_str = text[start_idx:end_idx+1]
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                # If it still fails, try to clean common issues like trailing commas
+                import re
+                json_str = re.sub(r',\s*([\]}])', r'\1', json_str)
+                return json.loads(json_str)
+    except:
+        pass
+    
+    return None
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
@@ -79,31 +103,48 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
 
     for provider, model_id, base_url in resilience_chain:
         try:
-            if provider == "ollama_cloud":
-                llm = ChatOpenAI(
-                    model=model_id,
-                    temperature=temperature,
-                    openai_api_key=ollama_key,
-                    openai_api_base=f"{base_url}/v1" if "localhost" in base_url else base_url, # Cloud bridge might not need /v1
-                    default_headers={"Authorization": f"Bearer {ollama_key}"}
-                )
-            elif provider == "gemini":
-                if not os.environ.get("GOOGLE_API_KEY"):
-                    os.environ["GOOGLE_API_KEY"] = gemini_key
-                llm = ChatGoogleGenerativeAI(model=model_id, temperature=temperature)
-            elif provider == "openrouter":
-                llm = ChatOpenAI(
-                    model=model_id,
-                    temperature=temperature,
-                    openai_api_key=openrouter_key,
-                    openai_api_base="https://openrouter.ai/api/v1",
-                    default_headers={"HTTP-Referer": "https://idearadar.app", "X-Title": "IdeaRadar"}
-                )
+            if provider == "ollama_cloud" and "hf.space" in base_url:
+                # The Cloud Bridge uses a custom schema (prompt/response)
+                import requests
+                url = f"{base_url}/chat"
+                headers = {
+                    "Authorization": f"Bearer {ollama_key}",
+                    "Content-Type": "application/json"
+                }
+                data = {
+                    "model": model_id,
+                    "prompt": prompt_template.format(**inputs),
+                    "stream": False
+                }
+                resp = requests.post(url, headers=headers, json=data, timeout=60)
+                resp.raise_for_status()
+                raw_output = resp.json().get("response", "")
             else:
-                llm = ChatGroq(model=model_id, temperature=temperature)
-            
-            chain = prompt_template | llm | StrOutputParser()
-            raw_output = chain.invoke(inputs)
+                if provider == "ollama_cloud":
+                    llm = ChatOpenAI(
+                        model=model_id,
+                        temperature=temperature,
+                        openai_api_key=ollama_key,
+                        openai_api_base=f"{base_url}/v1",
+                        default_headers={"Authorization": f"Bearer {ollama_key}"}
+                    )
+                elif provider == "gemini":
+                    if not os.environ.get("GOOGLE_API_KEY"):
+                        os.environ["GOOGLE_API_KEY"] = gemini_key
+                    llm = ChatGoogleGenerativeAI(model=model_id, temperature=temperature)
+                elif provider == "openrouter":
+                    llm = ChatOpenAI(
+                        model=model_id,
+                        temperature=temperature,
+                        openai_api_key=openrouter_key,
+                        openai_api_base="https://openrouter.ai/api/v1",
+                        default_headers={"HTTP-Referer": "https://idearadar.app", "X-Title": "IdeaRadar"}
+                    )
+                else:
+                    llm = ChatGroq(model=model_id, temperature=temperature)
+                
+                chain = prompt_template | llm | StrOutputParser()
+                raw_output = chain.invoke(inputs)
             
             # Robust JSON cleanup for Nemotron/Conversational models
             if provider in ["ollama_cloud", "openrouter"]:
@@ -114,6 +155,11 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
                 match = re.search(r"(\{.*\}|\[.*\])", raw_output, re.DOTALL)
                 if match:
                     raw_output = match.group(1)
+            
+            # Persistent Logging
+            with open("model_usage.log", "a") as f:
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{timestamp}] {provider.upper()} -> {model_id}\n")
             
             return raw_output, model_id
         except Exception as e:
@@ -398,6 +444,8 @@ def analyst_node(state: FluxIdeasState):
         - "source_refs": List of 1-3 objects {{"author": "...", "url": "...", "title": "..."}} from the data.
         
         Return ONLY a JSON array of 10 objects, sorted by 'market_score' (highest first).
+        
+        CRITICAL: Do not include ANY text before or after the JSON array. Start with [ and end with ].
         """,
         input_variables=["raw_data", "founder_context"]
     )
