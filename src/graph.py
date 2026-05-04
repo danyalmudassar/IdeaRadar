@@ -61,12 +61,17 @@ def scout_node(state: FluxIdeasState):
             if not text or len(text) < 50:
                 continue
             # Clean HTML
-            clean = (text
-                     .replace("<p>", "
-").replace("</p>", "")
-                     .replace("<i>", "").replace("</i>", "")
-                     .replace("<a>", "").replace("</a>", "")
-                     .replace("<b>", "").replace("</b>", ""))
+            clean = (
+    text
+    .replace("<p>", "\n")
+    .replace("</p>", "")
+    .replace("<i>", "")
+    .replace("</i>", "")
+    .replace("<a>", "")
+    .replace("</a>", "")
+    .replace("<b>", "")
+    .replace("</b>", "")
+)
             obj_id   = hit.get("objectID", "")
             story_id = hit.get("story_id", "")
             author   = hit.get("author", "anonymous")
