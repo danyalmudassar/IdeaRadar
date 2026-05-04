@@ -49,37 +49,43 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     
     # 1. Ollama Cloud Bridge (Top Priority for reasoning)
     if ollama_key:
-        resilience_chain.append(("ollama_cloud", "nemotron-3-nano:30b-cloud"))
+        ollama_base = os.environ.get("OLLAMA_BASE_URL", "https://dany00786-ollama.hf.space")
+        # Ensure base URL is clean for ChatOpenAI
+        if ollama_base.endswith("/v1"): ollama_base = ollama_base[:-3]
+        if ollama_base.endswith("/chat"): ollama_base = ollama_base[:-5]
+        
+        resilience_chain.append(("ollama_cloud", "nemotron-3-nano:30b-cloud", ollama_base))
     
     # 2. Gemini
     if gemini_key:
         resilience_chain.extend([
-            ("gemini", "gemini-2.5-pro"),
-            ("gemini", "gemini-2.5-flash")
+            ("gemini", "gemini-2.5-pro", ""),
+            ("gemini", "gemini-2.5-flash", "")
         ])
     
     # 3. OpenRouter
     if openrouter_key:
         resilience_chain.extend([
-            ("openrouter", "deepseek/deepseek-chat"),
-            ("openrouter", "meta-llama/llama-3.3-70b-instruct")
+            ("openrouter", "deepseek/deepseek-chat", ""),
+            ("openrouter", "meta-llama/llama-3.3-70b-instruct", "")
         ])
         
     # 4. Groq
     if groq_key:
         resilience_chain.extend([
-            ("groq", "llama-3.3-70b-versatile"),
-            ("groq", "llama-3.1-8b-instant")
+            ("groq", "llama-3.3-70b-versatile", ""),
+            ("groq", "llama-3.1-8b-instant", "")
         ])
 
-    for provider, model_id in resilience_chain:
+    for provider, model_id, base_url in resilience_chain:
         try:
             if provider == "ollama_cloud":
                 llm = ChatOpenAI(
                     model=model_id,
                     temperature=temperature,
                     openai_api_key=ollama_key,
-                    openai_api_base="https://dany00786-ollama.hf.space/v1" # Standard OpenAI path
+                    openai_api_base=f"{base_url}/v1" if "localhost" in base_url else base_url, # Cloud bridge might not need /v1
+                    default_headers={"Authorization": f"Bearer {ollama_key}"}
                 )
             elif provider == "gemini":
                 if not os.environ.get("GOOGLE_API_KEY"):
