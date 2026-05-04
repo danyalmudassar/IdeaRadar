@@ -144,7 +144,7 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
                         temperature=temperature,
                         openai_api_key=openrouter_key,
                         openai_api_base="https://openrouter.ai/api/v1",
-                        default_headers={"HTTP-Referer": "https://idearadar.app", "X-Title": "IdeaRadar"}
+                        default_headers={"HTTP-Referer": "https://fluxideas.app", "X-Title": "FLUXIDEAS"}
                     )
                 else:
                     llm = ChatGroq(model=model_id, temperature=temperature)
