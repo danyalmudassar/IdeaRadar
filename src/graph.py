@@ -286,7 +286,7 @@ def reasoner_node(state: FluxIdeasState):
     )
     
     try:
-        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:15000]}, tier="versatile", temperature=0.2, validator=extract_json)
+        raw_output = invoke_llm(prompt, {"topic": topic, "raw_data": raw_text[:8000]}, tier="versatile", temperature=0.2, validator=extract_json)
         analysis = extract_json(raw_output)
         if analysis is None:
             raise ValueError("Failed to parse JSON from Reasoner output")
@@ -358,7 +358,7 @@ def analyst_node(state: FluxIdeasState):
     founder_context = f"Location: {location}, Skills: {founder_profile.get('skills','None')}, Budget: {founder_profile.get('budget','None')}, Time: {founder_profile.get('time','None')}"
 
     try:
-        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:12000], "founder_context": founder_context}, tier="versatile", temperature=0, validator=extract_json)
+        raw_output = invoke_llm(prompt, {"raw_data": raw_text[:8000], "founder_context": founder_context}, tier="versatile", temperature=0, validator=extract_json)
         problems = extract_json(raw_output)
         if problems is None:
             raise ValueError("Failed to parse JSON from Analyst output")
@@ -503,7 +503,7 @@ def strategist_node(state: FluxIdeasState):
             "description": description,
             "target_customer": target_cust,
             "market_gap": market_gap,
-            "raw_context": raw_text[:10000]
+            "raw_context": raw_text[:8000]
         }, tier="versatile", temperature=0.3, validator=extract_json)
         blueprint = extract_json(raw_output)
         if blueprint is None: raise ValueError("Failed to parse JSON")
