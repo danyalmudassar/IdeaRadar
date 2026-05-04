@@ -305,25 +305,24 @@ def process_stream(stream_generator, status_container, log_container=None):
 
             if key == "orchestrator":
                 next_a = value.get('next_agent')
-                status_container.update(label=f"🤖 Orchestrator: Routing to {next_a}...", state="running")
-                progress_bar.progress(progress, text=f"Routing to {next_a.upper()}...")
-                add_log("orchestrator", f"Decision: Handing over mission to {next_a.upper()}.", log_container)
-                if next_a != "END" and next_a != "ask_human":
-                    add_log(next_a, "Initializing agent systems... thinking...", log_container)
+                if next_a and next_a not in ["END", "ask_human"]:
+                    status_container.update(label=f"🤖 Orchestrator: Routing to {next_a}...", state="running")
+                    progress_bar.progress(progress, text=f"Routing to {next_a.upper()}...")
+                    add_log("orchestrator", f"Decision: Handing over mission to {next_a.upper()}.", st.session_state.log_container)
             elif key in phases:
                 phase_name, phase_icon = phases[key]
-                status_container.update(label=f"{phase_icon} {phase_name}: {key.capitalize()} in progress...", state="running")
+                status_container.update(label=f"{phase_icon} {phase_name}: {key.capitalize()} Active", state="running")
                 
-                # Show detailed updates inside the expander directly
-                status_container.markdown(f"**{phase_icon} {key.capitalize()} Update:**")
+                # Show detailed updates inside the expander ONLY if there is content
                 if detailed_log:
+                    status_container.markdown(f"**{phase_icon} {key.capitalize()} Update:**")
                     status_container.caption(detailed_log)
-                
-                # Global Log
-                if detailed_log:
+                    # Global Log
                     add_log(key, detailed_log, st.session_state.log_container, model=current_model)
                 
-                if key == "critic":
+                if key == "critic" and not detailed_log:
+                    pass # Wait for critic to finish
+                elif key == "critic":
                     progress_bar.empty()
 
 # ── Sidebar: Flux Library ──────────────────────────────────────────
