@@ -736,11 +736,11 @@ def economist_node(state: FluxIdeasState):
         - "sam": "Serviceable Addressable Market",
         - "som": "Serviceable Obtainable Market (Year 1-3 goal)",
         - "growth_rate": "CAGR or industry growth percentage",
-        - "benchmarks": {
+        - "benchmarks": {{
             "avg_ltv": "Estimated Lifetime Value per customer",
             "target_cac": "Target Customer Acquisition Cost",
             "payback_period": "Expected months to recoup CAC"
-          },
+          }},
         - "economist_verdict": "2 sentence summary on market attractiveness"
         
         Return ONLY valid JSON.
