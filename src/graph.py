@@ -490,24 +490,25 @@ def analyst_node(state: FluxIdeasState):
         DATA (with sources):
         {raw_data}
         
-        For each idea, provide a JSON object with these EXACT keys:
+        For each idea, provide a JSON object with these EXACT keys (no omissions):
         - "problem_name": concise title (3-6 words)
         - "market_gap": 1-2 sentences explaining the gap
         - "urgency_score": integer 1-10
         - "commercial_potential": integer 1-10
-        - "moat_score": integer 1-10 (How defensible is this? Can a big tech company copy it easily?)
-        - "network_effects": integer 1-10 (Does the value increase as more users join?)
+        - "moat_score": integer 1-10 (Defensibility)
+        - "network_effects": integer 1-10 (Scalability)
         - "feasibility_score": integer 1-10
-        - "founder_fit_score": integer 1-10 (How well this matches the founder's skills/budget)
+        - "founder_fit_score": integer 1-10
         - "market_score": Final weighted average (out of 10)
         - "target_customer": who has this problem?
         - "description": 2 sentences on the core problem pain point
         - "sentiment": 1 word describing user emotion
-        - "source_refs": List of 1-3 objects {{"author": "...", "url": "...", "title": "..."}} from the data.
+        - "source_refs": List of 1-3 objects {{"author": "...", "url": "...", "title": "..."}}
         
-        Return ONLY a JSON array of 6 objects, sorted by 'market_score' (highest first).
+        Return ONLY a JSON array of 6 objects.
         
-        CRITICAL: Do not include ANY text before or after the JSON array. Start with [ and end with ].
+        CRITICAL: Every object MUST contain "moat_score" and "network_effects". Omissions will break the system.
+        Start with [ and end with ].
         """,
         input_variables=["raw_data", "founder_context"]
     )
