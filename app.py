@@ -59,111 +59,98 @@ with st.sidebar:
 # Premium CSS for Flux Aesthetic
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@700;900&display=swap');
 
-    /* Minimalist Intelligence Base */
+    /* Clean Base */
     html { scroll-behavior: smooth; }
     .stApp { 
-        background: #020617; 
-        background-image: 
-            radial-gradient(at 0% 0%, rgba(0, 255, 135, 0.03) 0%, transparent 40%),
-            radial-gradient(at 100% 0%, rgba(96, 239, 255, 0.03) 0%, transparent 40%);
-        font-family: 'Outfit', sans-serif; 
-        color: #f8fafc;
+        background: #0b0f1a; 
+        font-family: 'Inter', sans-serif; 
+        color: #e2e8f0;
     }
 
-    /* Clean Floating Title */
+    /* Minimalist Title */
     .flux-title { 
         font-size: 4.5rem !important; 
-        font-weight: 800; 
-        letter-spacing: -3px; 
-        background: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%); 
+        font-weight: 900; 
+        font-family: 'Outfit', sans-serif;
+        background: linear-gradient(to right, #ffffff, #94a3b8);
         -webkit-background-clip: text; 
         -webkit-text-fill-color: transparent; 
         text-align: center; 
-        margin-bottom: 5px !important; 
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+        margin-bottom: 0px !important; 
+        letter-spacing: -2px;
     }
 
     .flux-tagline { 
         text-align: center; 
-        color: #475569; 
-        font-size: 0.95rem; 
+        color: #64748b; 
+        font-size: 0.9rem; 
         font-weight: 500; 
-        letter-spacing: 8px; 
+        letter-spacing: 4px; 
         text-transform: uppercase; 
-        margin-bottom: 80px !important; 
+        margin-bottom: 60px !important; 
     }
 
-    /* Interactive Glass Cards */
-    div[data-testid="stForm"], .flux-card-wrap {
-        background: rgba(15, 23, 42, 0.3) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    /* Clean Interactive Cards */
+    div[data-testid="stForm"], .flux-card {
+        background: #111827 !important;
+        border: 1px solid #1f2937 !important;
         border-radius: 24px !important;
         padding: 40px !important;
-        box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5) !important;
-        transition: all 0.5s ease !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        transition: border-color 0.3s ease;
     }
     div[data-testid="stForm"]:hover {
-        border-color: rgba(0, 255, 135, 0.3) !important;
-        background: rgba(15, 23, 42, 0.4) !important;
+        border-color: #3b82f6 !important;
     }
 
-    /* High-Contrast Interactive Button */
+    /* Clean Modern Button */
     div.stButton > button { 
-        background: #f8fafc !important; 
-        color: #020617 !important; 
-        font-weight: 700 !important; 
-        font-size: 1rem !important; 
-        padding: 0.7rem 2rem !important; 
+        background: #3b82f6 !important; 
+        color: white !important; 
+        font-weight: 600 !important; 
         border-radius: 12px !important; 
         border: none !important; 
-        transition: all 0.3s ease !important; 
-        width: 100%;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        padding: 0.6rem 2rem !important;
+        transition: all 0.2s ease !important;
+        width: 100% !important;
     }
     div.stButton > button:hover { 
-        background: #00ff87 !important;
-        transform: scale(1.01);
-        box-shadow: 0 10px 20px rgba(0, 255, 135, 0.2) !important;
+        background: #2563eb !important;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4) !important;
     }
 
-    /* Clean Inputs */
+    /* Luminous Minimal Inputs */
     .stTextInput > div > div > input { 
-        background: rgba(2, 6, 23, 0.6) !important; 
+        background: #1f2937 !important; 
         border-radius: 12px !important; 
-        border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+        border: 1px solid #374151 !important; 
         color: white !important; 
-        padding: 15px 20px !important; 
-        font-size: 1.1rem !important;
-        transition: all 0.3s ease;
+        padding: 12px 20px !important;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #00ff87 !important;
-        background: rgba(2, 6, 23, 0.9) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
     }
 
-    /* Compact Tabs */
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        color: #64748b;
-        font-weight: 500;
+    /* Interactive Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #030712 !important;
+        border-right: 1px solid #1f2937 !important;
     }
-    .stTabs [aria-selected="true"] {
-        color: #00ff87 !important;
+    
+    .log-agent {
+        color: #3b82f6;
+        font-weight: 700;
+        font-family: monospace;
     }
-
-    /* Metric Pills */
-    .metric-pill {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 6px 16px;
-        border-radius: 100px;
+    .log-entry {
+        border-bottom: 1px solid #1f2937;
+        padding: 8px 0;
         font-size: 0.85rem;
-        font-weight: 600;
     }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,7 +158,7 @@ st.markdown("""
 st.markdown("""
 <div style='text-align:center; margin-bottom:60px;'>
     <h1 class='flux-title'>FLUXIDEAS</h1>
-    <p class='flux-tagline'>Advanced Multi-Agent Intelligence Synthesis</p>
+    <p class='flux-tagline'>Multi-Agent Venture Intelligence</p>
 </div>
 """, unsafe_allow_html=True)
 
