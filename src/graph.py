@@ -298,8 +298,11 @@ def scout_node(state: FluxIdeasState):
 
         # Sort by length of text as a proxy for detail
         all_sources = sorted(all_sources, key=lambda x: len(x['text']), reverse=True)[:15]
-        raw_data = [s["text"] for s in all_sources]
-        return {"raw_data": raw_data, "raw_sources": all_sources}
+        return {
+            "raw_sources": all_sources, 
+            "raw_data": [s['text'] for s in all_sources],
+            "log_message": f"Multi-signal scout complete: {len(hn_sources)} HN discussions, {len(reddit_sources)} Reddit threads, and {len(ph_sources)} ProductHunt reviews indexed."
+        }
 
     except Exception as e:
         pass
@@ -423,7 +426,8 @@ def researcher_node(state: FluxIdeasState):
             "raw_sources": current_sources,
             "research_notes": research_notes,
             "research_rounds": current_rounds,
-            "need_more_research": False
+            "need_more_research": False,
+            "log_message": f"Deep-dive round {current_rounds} complete. Extracted full technical content from {len(extraction_urls)} high-signal URLs and processed {len(all_results)} search snippets."
         }
     except Exception as e:
         pass
@@ -472,7 +476,8 @@ def reasoner_node(state: FluxIdeasState):
         return {
             "reasoning_log": json.dumps(analysis),
             "need_more_research": need_more,
-            "model_usage": usage
+            "model_usage": usage,
+            "log_message": "Deep reasoning complete. Market data synthesized into core pain-point clusters and actionable intelligence."
         }
     except Exception as e:
         pass
@@ -602,7 +607,11 @@ def analyst_node(state: FluxIdeasState):
                 
             problems = sorted(normalized_problems, key=lambda x: float(x.get("market_score", 0)), reverse=True)
             
-        return {"identified_problems": problems, "model_usage": usage}
+        return {
+            "identified_problems": problems, 
+            "model_usage": usage,
+            "log_message": f"Market analysis complete. Identified and ranked {len(problems)} distinct market gaps with full VC scoring (Moat, Network Effects, Urgency)."
+        }
 
     except Exception as e:
         pass
@@ -716,7 +725,11 @@ def strategist_node(state: FluxIdeasState):
         usage = state.get("model_usage", {})
         usage["Strategist"] = model_id
         
-        return {"blueprint": blueprint, "model_usage": usage}
+        return {
+            "blueprint": blueprint, 
+            "model_usage": usage,
+            "log_message": f"Strategist dossier generated for {problem_name}. Blueprint covers MVP features, monetization, and growth strategy."
+        }
     except Exception as e:
         pass
         # print(f"Strategist Error: {e}")
@@ -801,7 +814,11 @@ def economist_node(state: FluxIdeasState):
         usage = state.get("model_usage", {})
         usage["Economist"] = model_id
         
-        return {"market_size_analysis": analysis, "model_usage": usage}
+        return {
+            "market_size_analysis": analysis, 
+            "model_usage": usage,
+            "log_message": f"Economic projections complete: TAM {analysis.get('tam')}, SAM {analysis.get('sam')}, SOM {analysis.get('som')} calculated."
+        }
     except Exception as e:
         pass
         # print(f"Economist Analysis Error: {e}")
@@ -863,7 +880,12 @@ def designer_node(state: FluxIdeasState):
         }
         usage = state.get("model_usage", {})
 
-    return {"mockup_url": mockup_url, "design_system": design_system, "model_usage": usage}
+    return {
+        "mockup_url": mockup_url, 
+        "design_system": design_system, 
+        "model_usage": usage,
+        "log_message": f"Brand Identity construction complete: {design_system.get('component_style')} visual vibe selected. UI Layout blueprint drafted."
+    }
 
 def critic_node(state: FluxIdeasState):
     selected_problem = state.get('selected_problem', {})
@@ -904,7 +926,11 @@ def critic_node(state: FluxIdeasState):
         usage = state.get("model_usage", {})
         usage["Critic"] = model_id
         
-        return {"risk_assessment": analysis, "model_usage": usage}
+        return {
+            "risk_assessment": analysis, 
+            "model_usage": usage,
+            "log_message": "Critical Risk Audit complete. Identified technical hurdles, market risks, and defined the 'Kill-Switch' threshold."
+        }
     except Exception as e:
         pass
         # print(f"Critic Analysis Error: {e}")

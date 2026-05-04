@@ -356,6 +356,9 @@ def process_stream(stream_generator, status_container, log_container=None):
             
             current_model = current_model_usage.get(key.capitalize()) or current_model_usage.get(key)
             
+            # Detailed Log Capture
+            detailed_log = value.get('log_message')
+            
             if key == "orchestrator":
                 next_a = value.get('next_agent')
                 status_container.update(label=f"🤖 Orchestrator: Routing to {next_a}...", state="running")
@@ -364,45 +367,30 @@ def process_stream(stream_generator, status_container, log_container=None):
                 if next_a != "END" and next_a != "ask_human":
                     add_log(next_a, "Initializing agent systems... thinking...", log_container)
             elif key == "scout":
-                status_container.update(label="🕵️‍♂️ Scout Agent: Crawling HackerNews...", state="running")
-                sources = value.get('raw_sources', [])
-                st.write(f"✓ **Scout** gathered {len(sources)} sources from HackerNews.")
-                for s in sources[:3]: # Show top 3 live
-                    st.caption(f"🔗 {s.get('story_title')}")
-                add_log("scout", f"Scanned HN. Collected {len(sources)} source points.", log_container)
+                status_container.update(label="🕵️‍♂️ Scout Agent: Crawling Multi-Signal Feed...", state="running")
+                if detailed_log: add_log("scout", detailed_log, log_container)
             elif key == "researcher":
-                status_container.update(label="🔍 Researcher Agent: Running Tavily Hybrid Search...", state="running")
-                notes = value.get("research_notes", [])
-                st.write(f"✓ **Researcher** integrated {len(notes)} new findings.")
-                for n in notes[:2]: # Show top 2 live
-                    st.caption(f"📝 {n.split('\\n')[0]}")
-                add_log("researcher", f"Deep search complete. Integrated {len(notes)} new findings via Tavily AI.", log_container)
+                status_container.update(label="🔍 Researcher Agent: Running Deep Extractions...", state="running")
+                if detailed_log: add_log("researcher", detailed_log, log_container)
             elif key == "reasoner":
                 status_container.update(label="🧠 Reasoner Agent: Performing Deep Reasoning...", state="running")
-                st.write("✓ **Reasoner** finished Chain-of-Thought pattern synthesis.")
-                add_log("reasoner", "Pattern synthesis finished. Identifying market intensity.", log_container, model=current_model)
+                if detailed_log: add_log("reasoner", detailed_log, log_container, model=current_model)
             elif key == "analyst":
                 status_container.update(label="📊 Analyst Agent: Ranking Market Gaps...", state="running")
-                problems = value.get("identified_problems", [])
-                st.write(f"✓ **Analyst** identified {len(problems)} top-tier opportunities.")
-                add_log("analyst", f"Analysis finished. Selected {len(problems)} high-potential gaps.", log_container, model=current_model)
+                if detailed_log: add_log("analyst", detailed_log, log_container, model=current_model)
             elif key == "strategist":
                 status_container.update(label="📈 Strategist Agent: Drafting Business Plan...", state="running")
-                st.write("✓ **Strategist** finalized the 7-point Founder's Dossier.")
-                add_log("strategist", "Dossier drafting complete. Generated 7-point business plan.", log_container, model=current_model)
+                if detailed_log: add_log("strategist", detailed_log, log_container, model=current_model)
             elif key == "economist":
                 status_container.update(label="💰 Economist Agent: Calculating TAM/SAM/SOM...", state="running")
-                st.write("✓ **Economist** finalized market size projections.")
-                add_log("economist", "TAM/SAM/SOM calculations finalized.", log_container, model=current_model)
+                if detailed_log: add_log("economist", detailed_log, log_container, model=current_model)
             elif key == "designer":
                 status_container.update(label="🎨 Designer Agent: Creating Visual Mockup...", state="running")
-                st.write("✓ **Designer** generated the UI concept URL.")
-                add_log("designer", "Visual identity and UI mockup constructed.", log_container, model=current_model)
+                if detailed_log: add_log("designer", detailed_log, log_container, model=current_model)
             elif key == "critic":
                 status_container.update(label="🕵️‍♂️ Critic Agent: Final Risk Audit...", state="running")
-                st.write("✓ **Critic** finished stress-testing the model.")
-                add_log("critic", "Red-team audit finished. Identified kill-switch criteria.", log_container, model=current_model)
-                progress_bar.empty() # Clear at end
+                if detailed_log: add_log("critic", detailed_log, log_container, model=current_model)
+                progress_bar.empty()
 
 # ── Sidebar: Flux Library ──────────────────────────────────────────
 with st.sidebar:
