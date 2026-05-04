@@ -304,6 +304,7 @@ def scout_node(state: FluxIdeasState):
             "log_message": f"Multi-signal scout complete: {len(hn_sources)} HN discussions, {len(reddit_sources)} Reddit threads, and {len(ph_sources)} ProductHunt reviews indexed."
         }
 
+    except Exception as e:
         fallback = [{"text": f"Error searching for {search_topic}: {e}",
                      "author": "N/A", "url": "", "story_title": "", "date": ""}]
         return {
