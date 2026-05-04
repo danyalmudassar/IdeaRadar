@@ -643,6 +643,13 @@ if st.session_state.app_stage == "done":
         mc2.metric("⚡ Urgency", f"{mgs.get('urgency', '?')}/10")
         mc3.metric("💰 Commercial", f"{mgs.get('commercial_potential', '?')}/10")
         mc4.metric("🔧 Feasibility", f"{mgs.get('feasibility', '?')}/10")
+        
+        # VC Framework Row
+        st.markdown("#### 🛡️ Venture Capital Framework")
+        vcc1, vcc2 = st.columns(2)
+        vcc1.metric("🏰 Moat Potential", f"{sel_prob.get('moat_score', '?')}/10")
+        vcc2.metric("🕸️ Network Effects", f"{sel_prob.get('network_effects', '?')}/10")
+        
         st.markdown(f"> {mgs.get('rationale', '')}")
 
         st.markdown("---")

@@ -330,30 +330,25 @@ def researcher_node(state: FluxIdeasState):
             
         tavily_client = TavilyClient(api_key=tavily_key)
         
-        # 1. The "Pain Point" Scrapers (Where people complain)
-        pain_query = f"{search_topic} biggest pain points frustrations 'why is it so hard' site:reddit.com OR site:quora.com"
-        pain_response = tavily_client.search(
-            query=pain_query,
-            search_depth="basic",
-            max_results=4
-        )
+        rounds = state.get("research_rounds", 0)
         
-        # 2. The "Competitive Intelligence" Scrapers (Where startups fail)
+        # 1. The "Pain Point" Scrapers
+        pain_query = f"{search_topic} biggest pain points frustrations 'why is it so hard' site:reddit.com OR site:quora.com"
+        pain_response = tavily_client.search(query=pain_query, search_depth="basic", max_results=4)
+        
+        # 2. The "Competitive Intelligence" Scrapers
         comp_query = f"{search_topic} alternatives complaints missing features site:producthunt.com OR site:indiehackers.com"
-        comp_response = tavily_client.search(
-            query=comp_query,
-            search_depth="basic",
-            max_results=4
-        )
+        comp_response = tavily_client.search(query=comp_query, search_depth="basic", max_results=4)
 
-        # 3. The "Expert/Industry" Scrapers (Where professionals vent)
-        expert_query = f"What are the major workarounds, 1-star reviews, and business gaps for {search_topic} tools? site:g2.com OR site:stackoverflow.com"
-        expert_response = tavily_client.search(
-            query=expert_query,
-            search_depth="advanced",
-            include_answer=True,
-            max_results=4
-        )
+        # 3. The "Deep/Technical" Scrapers (Round-aware)
+        if rounds > 0:
+            # Deep Dive: Focus on engineering hurdles and real-world friction
+            expert_query = f"unsolved technical problems, API limitations, and hidden costs of {search_topic} site:stackoverflow.com OR site:github.com OR site:medium.com"
+        else:
+            # Broad Industry Scan
+            expert_query = f"market growth, regulatory hurdles, and enterprise business gaps for {search_topic} site:g2.com OR site:crunchbase.com OR site:reuters.com"
+            
+        expert_response = tavily_client.search(query=expert_query, search_depth="advanced", include_answer=True, max_results=4)
         
         all_results = pain_response.get("results", []) + comp_response.get("results", []) + expert_response.get("results", [])
         
@@ -500,6 +495,8 @@ def analyst_node(state: FluxIdeasState):
         - "market_gap": 1-2 sentences explaining the gap
         - "urgency_score": integer 1-10
         - "commercial_potential": integer 1-10
+        - "moat_score": integer 1-10 (How defensible is this? Can a big tech company copy it easily?)
+        - "network_effects": integer 1-10 (Does the value increase as more users join?)
         - "feasibility_score": integer 1-10
         - "founder_fit_score": integer 1-10 (How well this matches the founder's skills/budget)
         - "market_score": Final weighted average (out of 10)
@@ -553,6 +550,8 @@ def analyst_node(state: FluxIdeasState):
                     "market_gap": norm_p.get("marketgap", norm_p.get("gap", p.get("description", p.get("market_gap", "No description provided")))),
                     "urgency_score": norm_p.get("urgencyscore", norm_p.get("urgency", p.get("urgency_score", 5))),
                     "commercial_potential": norm_p.get("commercialpotential", p.get("commercial_potential", 5)),
+                    "moat_score": norm_p.get("moatscore", p.get("moat_score", 5)),
+                    "network_effects": norm_p.get("networkeffects", p.get("network_effects", 5)),
                     "feasibility_score": norm_p.get("feasibilityscore", norm_p.get("feasibility", p.get("feasibility_score", 5))),
                     "founder_fit_score": norm_p.get("founderfitscore", norm_p.get("founderfit", p.get("founder_fit_score", 5))),
                     "market_score": norm_p.get("marketscore", p.get("market_score", 50)), # might be out of 10 or 100
