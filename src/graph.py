@@ -35,9 +35,10 @@ def extract_json(text):
 
 def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     """
-    Ultimate Fallback Engine: Rotates through Gemini, OpenRouter, and Groq 
-    to bypass rate limits on all platforms.
+    Ultimate Fallback Engine: Rotates through Ollama Cloud (Nemotron 30B), 
+    Gemini, OpenRouter, and Groq to bypass rate limits.
     """
+    ollama_key = os.environ.get("OLLAMA_API_KEY")
     gemini_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     groq_key = os.environ.get("GROQ_API_KEY")
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
@@ -45,16 +46,26 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
     # Define the "Resilience Chain"
     # (Provider, Model ID)
     resilience_chain = []
+    
+    # 1. Ollama Cloud Bridge (Top Priority for reasoning)
+    if ollama_key:
+        resilience_chain.append(("ollama_cloud", "nemotron-3-nano:30b-cloud"))
+    
+    # 2. Gemini
     if gemini_key:
         resilience_chain.extend([
             ("gemini", "gemini-2.5-pro"),
             ("gemini", "gemini-2.5-flash")
         ])
+    
+    # 3. OpenRouter
     if openrouter_key:
         resilience_chain.extend([
             ("openrouter", "deepseek/deepseek-chat"),
             ("openrouter", "meta-llama/llama-3.3-70b-instruct")
         ])
+        
+    # 4. Groq
     if groq_key:
         resilience_chain.extend([
             ("groq", "llama-3.3-70b-versatile"),
@@ -63,7 +74,14 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
 
     for provider, model_id in resilience_chain:
         try:
-            if provider == "gemini":
+            if provider == "ollama_cloud":
+                llm = ChatOpenAI(
+                    model=model_id,
+                    temperature=temperature,
+                    openai_api_key=ollama_key,
+                    openai_api_base="https://dany00786-ollama.hf.space/v1" # Standard OpenAI path
+                )
+            elif provider == "gemini":
                 if not os.environ.get("GOOGLE_API_KEY"):
                     os.environ["GOOGLE_API_KEY"] = gemini_key
                 llm = ChatGoogleGenerativeAI(model=model_id, temperature=temperature)
@@ -73,25 +91,33 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
                     temperature=temperature,
                     openai_api_key=openrouter_key,
                     openai_api_base="https://openrouter.ai/api/v1",
-                    default_headers={
-                        "HTTP-Referer": "https://idearadar.app",
-                        "X-Title": "IdeaRadar"
-                    }
+                    default_headers={"HTTP-Referer": "https://idearadar.app", "X-Title": "IdeaRadar"}
                 )
             else:
                 llm = ChatGroq(model=model_id, temperature=temperature)
             
             chain = prompt_template | llm | StrOutputParser()
-            return chain.invoke(inputs)
+            raw_output = chain.invoke(inputs)
+            
+            # Robust JSON cleanup for Nemotron/Conversational models
+            if provider in ["ollama_cloud", "openrouter"]:
+                # Remove markdown code blocks if present
+                raw_output = re.sub(r"```json\s*", "", raw_output)
+                raw_output = re.sub(r"```\s*", "", raw_output)
+                # Remove leading/trailing filler text
+                match = re.search(r"(\{.*\}|\[.*\])", raw_output, re.DOTALL)
+                if match:
+                    raw_output = match.group(1)
+            
+            return raw_output
         except Exception as e:
             err_msg = str(e).lower()
-            # If rate limited, overloaded, quota exhausted, or invalid (often region/quota), try next model
             if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted", "400", "invalid_argument"]):
                 time.sleep(2)
                 continue
             raise e
             
-    raise Exception("All intelligence engines (Gemini, OpenRouter & Groq) are currently at their rate limits. Please try again in 60 seconds.")
+    raise Exception("All intelligence engines are currently offline or exhausted. Please try again in 60 seconds.")
 
 def scout_node(state: FluxIdeasState):
     topic = state.get("topic")
