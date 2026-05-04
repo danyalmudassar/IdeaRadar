@@ -435,8 +435,8 @@ if st.session_state.app_stage == "processing1":
 # Stage: SELECTION
 if st.session_state.app_stage == "selection":
     # Ensure log container stays current on selection screen
-    if st.session_state.live_logs:
-        with log_container:
+    if st.session_state.live_logs and st.session_state.log_container:
+        with st.session_state.log_container:
             for l in st.session_state.live_logs[::-1]:
                 st.markdown(l, unsafe_allow_html=True)
     
