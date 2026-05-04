@@ -677,6 +677,16 @@ def strategist_node(state: FluxIdeasState):
             "model": "<Subscription / Freemium / Transaction-based>",
             "price_point": "<e.g. $29/user/month>",
             "rationale": "<1-2 sentences on why this pricing makes sense for this market>"
+          },
+          "growth_strategy": {{
+            "day_1_hack": "<A specific action to get the first 10 users>",
+            "primary_channel": "<The #1 marketing channel (e.g. LinkedIn, SEO, Niche communities)>",
+            "elevator_pitch": "<The 1-sentence sales pitch>"
+          }},
+          "execution_details": {{
+            "critical_apis": ["<API 1>", "<API 2>", "<API 3>"],
+            "security_priority": "<The most important technical risk to mitigate>",
+            "infrastructure_tip": "<One tip for keeping costs low at launch>"
           }}
         }}
         """,
@@ -817,6 +827,11 @@ def designer_node(state: FluxIdeasState):
             "sidebar": "Description of side navigation",
             "main_canvas": "The primary workspace or dashboard layout",
             "primary_action": "The most prominent CTA/Button"
+          }},
+        - "user_persona": {{
+            "profile": "e.g. The Solopreneur looking for X",
+            "goal": "The primary desired outcome",
+            "frustration": "The specific pain point that keeps them awake"
           }}
         
         Return ONLY valid JSON.

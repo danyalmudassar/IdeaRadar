@@ -768,6 +768,12 @@ if st.session_state.app_stage == "done":
 
     # ── Tab 2: The MVP ───────────────────────────────────────────────────────
     with tab2:
+        # Elevator Pitch
+        growth = dossier.get("growth_strategy", {})
+        if growth.get("elevator_pitch"):
+            st.markdown(f"### 📣 {growth.get('elevator_pitch','')}")
+            st.markdown("---")
+
         # UI Blueprint (Textual)
         ds = (st.session_state.current_state or {}).get("design_system", {})
         st.markdown("### 🗺️ Software UI Blueprint")
@@ -799,24 +805,36 @@ if st.session_state.app_stage == "done":
         else:
             st.caption("Generating UI blueprint... run a fresh scan to see the textual layout.")
             
-            # Render Design System
-            ds = (st.session_state.current_state or {}).get("design_system", {})
-            if ds:
-                with st.expander("🧬 View Brand Design System", expanded=True):
-                    dc1, dc2 = st.columns([1, 1.2])
-                    with dc1:
-                        st.markdown("**Color Palette**")
-                        palette = ds.get("color_palette", [])
-                        pal_html = "".join([f"<div style='display:inline-block;background:{c};width:40px;height:40px;border-radius:8px;margin-right:8px;border:1px solid #334155' title='{c}'></div>" for c in palette])
-                        st.markdown(pal_html, unsafe_allow_html=True)
-                        st.caption(" ".join(palette))
-                    with dc2:
-                        typo = ds.get("typography", {})
-                        st.markdown(f"**Vibe:** {ds.get('component_style', 'N/A')}")
-                        st.markdown(f"**Icons:** {ds.get('icon_style', 'N/A')}")
-                        st.caption(f"Headings: {typo.get('headings', 'N/A')} | Body: {typo.get('font_family', 'N/A')}")
-            
-            st.markdown("---")
+        # Render Design System
+        ds = (st.session_state.current_state or {}).get("design_system", {})
+        if ds:
+            with st.expander("🧬 View Brand Design System", expanded=True):
+                dc1, dc2 = st.columns([1, 1.2])
+                with dc1:
+                    st.markdown("**Color Palette**")
+                    palette = ds.get("color_palette", [])
+                    pal_html = "".join([f"<div style='display:inline-block;background:{c};width:40px;height:40px;border-radius:8px;margin-right:8px;border:1px solid #334155' title='{c}'></div>" for c in palette])
+                    st.markdown(pal_html, unsafe_allow_html=True)
+                    st.caption(" ".join(palette))
+                with dc2:
+                    typo = ds.get("typography", {})
+                    st.markdown(f"**Vibe:** {ds.get('component_style', 'N/A')}")
+                    st.markdown(f"**Icons:** {ds.get('icon_style', 'N/A')}")
+                    st.caption(f"Headings: {typo.get('headings', 'N/A')} | Body: {typo.get('font_family', 'N/A')}")
+        
+        # User Persona
+        persona = ds.get("user_persona", {})
+        if persona:
+            st.markdown("### 👤 Ideal User Persona")
+            st.markdown(f"""
+            <div style='background:rgba(96, 239, 255, 0.05); border-radius:12px; padding:20px; border:1px dashed #60efff'>
+                <div style='font-weight:800; color:#60efff;'>PROFILE: {persona.get('profile','')}</div>
+                <div style='margin-top:8px; color:#f1f5f9;'><span style='color:#94a3b8'>Goal:</span> {persona.get('goal','')}</div>
+                <div style='margin-top:4px; color:#f1f5f9;'><span style='color:#94a3b8'>Frustration:</span> {persona.get('frustration','')}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
 
         mvp = dossier.get("mvp_blueprint", {})
         st.markdown("### 🚀 MVP Blueprint — The First 3 Features")
@@ -837,6 +855,13 @@ if st.session_state.app_stage == "done":
         m1.markdown(f"**Model:** {mono.get('model', 'N/A')}")
         m2.markdown(f"**Price Point:** {mono.get('price_point', 'N/A')}")
         st.info(mono.get("rationale", ""))
+        
+        # Growth Hack
+        if growth:
+            st.markdown("---")
+            st.markdown("### 📈 Day 1 Growth Hack")
+            st.success(f"**Action:** {growth.get('day_1_hack','')}")
+            st.info(f"**Primary Channel:** {growth.get('primary_channel','')}")
 
     # ── Tab 3: The Build ─────────────────────────────────────────────────────
     with tab3:
@@ -879,6 +904,20 @@ if st.session_state.app_stage == "done":
                         <div style='color:#f1f5f9;font-size:0.92rem;line-height:1.5;font-weight:500'>{w.get('focus','')}</div>
                     </div>
                     """, unsafe_allow_html=True)
+            
+        # Execution Details
+        exec_det = dossier.get("execution_details", {})
+        if exec_det:
+            st.markdown("---")
+            st.markdown("### ⚙️ Execution Criticals")
+            ex1, ex2 = st.columns(2)
+            with ex1:
+                st.markdown("**🔌 Critical APIs:**")
+                for api in exec_det.get("critical_apis", []):
+                    st.markdown(f"- {api}")
+            with ex2:
+                st.warning(f"**🛡️ Security Focus:**\n{exec_det.get('security_priority','')}")
+                st.info(f"**☁️ Infra Tip:** {exec_det.get('infrastructure_tip','')}")
 
     # ── Tab 4: Risk Audit ──────────────────────────────────────────────────
     with tab4:
