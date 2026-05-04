@@ -118,7 +118,12 @@ def invoke_llm(prompt_template, inputs, tier="versatile", temperature=0.1):
             return raw_output
         except Exception as e:
             err_msg = str(e).lower()
-            if any(x in err_msg for x in ["rate_limit", "429", "overloaded", "quota", "resource_exhausted", "400", "invalid_argument"]):
+            # Fallback on rate limits, timeouts, 404s, or connection errors
+            retry_triggers = [
+                "rate_limit", "429", "overloaded", "quota", "resource_exhausted", 
+                "400", "invalid_argument", "connection", "timeout", "404", "not found"
+            ]
+            if any(x in err_msg for x in retry_triggers):
                 time.sleep(2)
                 continue
             raise e
