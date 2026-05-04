@@ -144,6 +144,16 @@ st.markdown("""
         transition: all 0.4s ease;
         backdrop-filter: blur(10px);
     }
+    
+    /* Fade-In Animation for Dashboard Cards */
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .flux-fade-in {
+        animation: slideUpFade 0.6s ease-out forwards;
+    }
+    
     .stTextInput > div > div > input:focus {
         border-color: #00ff87 !important;
         box-shadow: 0 0 30px rgba(0, 255, 135, 0.2) !important;
@@ -665,6 +675,15 @@ if st.session_state.app_stage == "done":
             st.write(f"**Growth Rate:** {mkt.get('growth_rate', 'N/A')}")
             st.success(f"**Economist Verdict:** {mkt.get('economist_verdict', '')}")
             
+            # Unit Economics Benchmarks
+            bench = mkt.get("benchmarks", {})
+            if bench:
+                st.markdown("#### 💵 Projected Unit Economics")
+                bc1, bc2, bc3 = st.columns(3)
+                bc1.metric("Est. LTV", bench.get("avg_ltv", "N/A"))
+                bc2.metric("Target CAC", bench.get("target_cac", "N/A"))
+                bc3.metric("Payback", bench.get("payback_period", "N/A"))
+            
             # Interactive Revenue Simulator
             st.markdown("#### 🧮 Interactive Revenue Simulator")
             with st.expander("🛠️ Adjust Growth Assumptions", expanded=False):
@@ -824,9 +843,17 @@ if st.session_state.app_stage == "done":
 
         week_plan = tech.get("week_plan", [])
         if week_plan:
-            st.markdown("**📅 4-Week Sprint Plan:**")
-            for w in week_plan:
-                st.markdown(f"- **Week {w.get('week','')}:** {w.get('focus','')}")
+            st.markdown("**📅 4-Week Technical Kanban Board:**")
+            k1, k2, k3, k4 = st.columns(4)
+            cols = [k1, k2, k3, k4]
+            for i, w in enumerate(week_plan[:4]):
+                with cols[i]:
+                    st.markdown(f"""
+                    <div style='background:#1e293b;border-radius:12px;padding:16px;min-height:140px;border-top:5px solid #60efff;box-shadow: 0 4px 15px rgba(0,0,0,0.3)'>
+                        <div style='font-weight:900;color:#60efff;font-size:0.75rem;margin-bottom:10px;text-transform:uppercase'>Week {w.get('week','')}</div>
+                        <div style='color:#f1f5f9;font-size:0.92rem;line-height:1.5;font-weight:500'>{w.get('focus','')}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
     # ── Tab 4: Risk Audit ──────────────────────────────────────────────────
     with tab4:
